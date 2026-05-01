@@ -18,6 +18,7 @@ app.use("/uploads", express.static(uploadsDir));
 const upload = multer({ storage: multer.memoryStorage() });
 
 const db = {
+  reviews: [],
   rooms: [
     { id: 1, code: "Room101", floor: 1, status: "occupied" },
     { id: 2, code: "Room102", floor: 1, status: "available" },
@@ -50,6 +51,7 @@ const db = {
 
 let taskIdSeq = db.tasks.length + 1;
 let issueIdSeq = 1;
+let reviewIdSeq = 1;
 const usedImageHashes = new Set();
 const hashToTaskId = new Map();
 const statusAllowed = new Set(["available", "occupied", "maintenance"]);
@@ -152,6 +154,19 @@ app.post("/api/tasks/:id/complete", upload.single("image"), (req, res) => {
   hashToTaskId.set(hash, task.id);
 
   return res.json(task);
+});
+
+app.get("/api/reviews", (_, res) => {
+  res.json(db.reviews.sort((a, b) => b.id - a.id));
+});
+
+app.post("/api/reviews", (req, res) => {
+  const { guestName = "Anonymous", roomCode, rating, comment } = req.body;
+  if (!roomCode || !rating || !comment) return res.status(400).json({ error: "roomCode, rating, and comment are required." });
+  if (rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be between 1 and 5." });
+  const review = { id: reviewIdSeq++, guestName, roomCode, rating, comment, createdAt: new Date().toISOString() };
+  db.reviews.push(review);
+  return res.status(201).json(review);
 });
 
 app.get("/api/issues", (_, res) => {

@@ -4,6 +4,7 @@ const statusStyles = {
   maintenance: "bg-rose-100 text-rose-700 border-rose-200",
   pending: "bg-amber-100 text-amber-700 border-amber-200",
   completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  open: "bg-rose-100 text-rose-700 border-rose-200",
 };
 
 export default function Badge({ value }) {
