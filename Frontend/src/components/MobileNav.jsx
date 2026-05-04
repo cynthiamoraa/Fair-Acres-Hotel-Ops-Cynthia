@@ -1,6 +1,5 @@
 const views = [
   { id: "manager", label: "Dashboard" },
-  { id: "worker", label: "Workers" },
 ];
 
 export default function MobileNav({ activeView, onChangeView }) {

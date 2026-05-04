@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import MobileNav from "./components/MobileNav";
 import Sidebar from "./components/Sidebar";
+import CalendarPage from "./pages/CalendarPage";
 import ManagerPage from "./pages/ManagerPage";
-import WorkerPage from "./pages/WorkerPage";
+import NotificationsPage from "./pages/NotificationsPage";
+import SettingsPage from "./pages/SettingsPage";
 import { API_URL, fetchJson } from "./services/api";
 
 export default function App() {
@@ -13,31 +15,32 @@ export default function App() {
   const [workers, setWorkers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [issues, setIssues] = useState([]);
-
-  const [selectedWorker, setSelectedWorker] = useState("w1");
-  const [newTask, setNewTask] = useState({ roomCode: "Room101", title: "", notes: "", workerId: "w1" });
+  const [reviews, setReviews] = useState([]);
+  const [newTask, setNewTask] = useState({ roomCode: "", title: "", notes: "", workerId: "" });
 
   async function loadAll() {
-    const [nextStats, nextRooms, nextWorkers, nextTasks, nextIssues] = await Promise.all([
+    const [nextStats, nextRooms, nextWorkers, nextTasks, nextIssues, nextReviews] = await Promise.all([
       fetchJson("/stats"),
       fetchJson("/rooms"),
       fetchJson("/workers"),
       fetchJson("/tasks"),
       fetchJson("/issues"),
+      fetchJson("/reviews"),
     ]);
-
     setStats(nextStats);
     setRooms(nextRooms);
     setWorkers(nextWorkers);
     setTasks(nextTasks);
     setIssues(nextIssues);
+    setReviews(nextReviews);
+    setNewTask((c) => ({
+      ...c,
+      workerId: c.workerId || nextWorkers[0]?.id || "",
+      roomCode: c.roomCode || nextRooms[0]?.code || "",
+    }));
   }
 
-  useEffect(() => {
-    loadAll();
-  }, []);
-
-  const workerTasks = useMemo(() => tasks.filter((task) => task.workerId === selectedWorker), [tasks, selectedWorker]);
+  useEffect(() => { loadAll(); }, []);
 
   async function createTask(event) {
     event.preventDefault();
@@ -46,19 +49,7 @@ export default function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTask),
     });
-    setNewTask((current) => ({ ...current, title: "", notes: "" }));
-    loadAll();
-  }
-
-  async function completeTask(taskId, file) {
-    if (!file) return alert("Photo proof is required.");
-
-    const formData = new FormData();
-    formData.append("image", file);
-    const response = await fetch(`${API_URL}/tasks/${taskId}/complete`, { method: "POST", body: formData });
-    const data = await response.json();
-
-    if (!response.ok) return alert(data.error || "Failed to complete task.");
+    setNewTask((c) => ({ ...c, title: "", notes: "" }));
     loadAll();
   }
 
@@ -75,21 +66,18 @@ export default function App() {
             rooms={rooms}
             workers={workers}
             issues={issues}
+            reviews={reviews}
+            tasks={tasks}
             newTask={newTask}
             onNewTaskChange={setNewTask}
             onCreateTask={createTask}
+            onRoomsChange={loadAll}
           />
         )}
 
-        {view === "worker" && (
-          <WorkerPage
-            workers={workers}
-            selectedWorker={selectedWorker}
-            onSelectedWorkerChange={setSelectedWorker}
-            workerTasks={workerTasks}
-            onCompleteTask={completeTask}
-          />
-        )}
+        {view === "calendar" && <CalendarPage tasks={tasks} />}
+        {view === "notifications" && <NotificationsPage issues={issues} tasks={tasks} />}
+        {view === "settings" && <SettingsPage workers={workers} onWorkersChange={loadAll} />}
       </main>
     </div>
   );

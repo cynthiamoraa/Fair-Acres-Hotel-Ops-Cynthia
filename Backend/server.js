@@ -19,37 +19,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const db = {
   reviews: [],
-  rooms: [
-    { id: 1, code: "Room101", floor: 1, status: "occupied" },
-    { id: 2, code: "Room102", floor: 1, status: "available" },
-    { id: 3, code: "Room103", floor: 1, status: "maintenance" },
-    { id: 4, code: "Room201", floor: 2, status: "occupied" },
-    { id: 5, code: "Room202", floor: 2, status: "available" },
-    { id: 6, code: "Room203", floor: 2, status: "available" },
-  ],
-  workers: [
-    { id: "w1", name: "Alex" },
-    { id: "w2", name: "Sam" },
-    { id: "w3", name: "Taylor" },
-  ],
-  tasks: [
-    {
-      id: 1,
-      roomCode: "Room101",
-      title: "Replace towels",
-      notes: "2 bath towels + 2 hand towels",
-      status: "pending",
-      workerId: "w1",
-      createdAt: new Date().toISOString(),
-      completedAt: null,
-      proofImageUrl: null,
-      proofImageHash: null,
-    },
-  ],
+  rooms: [],
+  workers: [],
+  tasks: [],
   issues: [],
 };
 
-let taskIdSeq = db.tasks.length + 1;
+let taskIdSeq = 1;
 let issueIdSeq = 1;
 let reviewIdSeq = 1;
 const usedImageHashes = new Set();
@@ -71,6 +47,22 @@ function sha256(buffer) {
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 app.get("/api/workers", (_, res) => res.json(db.workers));
 
+app.post("/api/workers", (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ error: "name is required." });
+  const id = `w${Date.now()}`;
+  const worker = { id, name };
+  db.workers.push(worker);
+  return res.status(201).json(worker);
+});
+
+app.delete("/api/workers/:id", (req, res) => {
+  const idx = db.workers.findIndex((w) => w.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: "Worker not found." });
+  db.workers.splice(idx, 1);
+  return res.json({ ok: true });
+});
+
 app.get("/api/stats", (_, res) => {
   const available = db.rooms.filter((r) => r.status === "available").length;
   const occupied = db.rooms.filter((r) => r.status === "occupied").length;
@@ -90,6 +82,17 @@ app.get("/api/stats", (_, res) => {
 });
 
 app.get("/api/rooms", (_, res) => res.json(db.rooms));
+
+app.post("/api/rooms", (req, res) => {
+  const { code, floor, status = "available" } = req.body;
+  if (!code || !floor) return res.status(400).json({ error: "code and floor are required." });
+  if (db.rooms.find((r) => r.code.toLowerCase() === code.toLowerCase()))
+    return res.status(409).json({ error: "Room code already exists." });
+  if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid status." });
+  const room = { id: db.rooms.length + 1, code, floor: Number(floor), status };
+  db.rooms.push(room);
+  return res.status(201).json(room);
+});
 
 app.patch("/api/rooms/:id/status", (req, res) => {
   const id = Number(req.params.id);
@@ -171,6 +174,13 @@ app.post("/api/reviews", (req, res) => {
 
 app.get("/api/issues", (_, res) => {
   res.json(db.issues.sort((a, b) => b.id - a.id));
+});
+
+app.patch("/api/issues/:id/resolve", (req, res) => {
+  const issue = db.issues.find((i) => i.id === Number(req.params.id));
+  if (!issue) return res.status(404).json({ error: "Issue not found." });
+  issue.status = "resolved";
+  return res.json(issue);
 });
 
 app.post("/api/issues", upload.single("image"), (req, res) => {

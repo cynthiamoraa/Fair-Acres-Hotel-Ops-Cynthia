@@ -1,17 +1,22 @@
-import { Bell, Building2, CalendarDays, LayoutDashboard, LogOut, Settings, Users } from "lucide-react";
+import { Bell, Building2, CalendarDays, LayoutDashboard, LogOut, Settings } from "lucide-react";
 
 const primaryNav = [
   { id: "manager", label: "Dashboard", icon: LayoutDashboard },
-  { id: "worker", label: "Workers", icon: Users },
 ];
 
 const secondaryNav = [
-  { label: "Calendar", icon: CalendarDays },
-  { label: "Notifications", icon: Bell },
-  { label: "Settings", icon: Settings },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar({ activeView, onChangeView }) {
+  function handleLogout() {
+    if (window.confirm("Log out of the management dashboard?")) {
+      onChangeView("manager");
+    }
+  }
+
   return (
     <aside className="hidden md:flex w-72 shrink-0 bg-[#111827] text-slate-200 p-5 flex-col">
       <div className="flex items-center gap-3 px-2">
@@ -47,8 +52,15 @@ export default function Sidebar({ activeView, onChangeView }) {
         <div className="mt-3 space-y-1">
           {secondaryNav.map((item) => {
             const Icon = item.icon;
+            const isActive = activeView === item.id;
             return (
-              <button key={item.label} className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white">
+              <button
+                key={item.id}
+                onClick={() => onChangeView(item.id)}
+                className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  isActive ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                }`}
+              >
                 <Icon size={18} /> {item.label}
               </button>
             );
@@ -59,7 +71,10 @@ export default function Sidebar({ activeView, onChangeView }) {
       <div className="mt-auto rounded-2xl bg-white/[0.06] p-4">
         <p className="text-sm font-semibold text-white">Operations Manager</p>
         <p className="mt-1 text-xs leading-5 text-slate-400">Monitor rooms, assign tasks, and resolve guest reports.</p>
-        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15">
+        <button
+          onClick={handleLogout}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/15"
+        >
           <LogOut size={16} /> Logout
         </button>
       </div>

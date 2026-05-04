@@ -3,9 +3,14 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import GuestApp from "./GuestApp.jsx";
+import WorkerApp from "./WorkerApp.jsx";
 
-const isGuest = window.location.pathname.startsWith("/guest");
+const path = window.location.pathname;
+const isGuest = path.startsWith("/guest");
+const isWorker = path.startsWith("/worker");
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>{isGuest ? <GuestApp /> : <App />}</StrictMode>
+  <StrictMode>
+    {isGuest ? <GuestApp /> : isWorker ? <WorkerApp /> : <App />}
+  </StrictMode>
 );
