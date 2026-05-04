@@ -10,11 +10,9 @@ const secondaryNav = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar({ activeView, onChangeView }) {
+export default function Sidebar({ activeView, onChangeView, onLogout }) {
   function handleLogout() {
-    if (window.confirm("Log out of the management dashboard?")) {
-      onChangeView("manager");
-    }
+    if (window.confirm("Log out of the management dashboard?")) onLogout();
   }
 
   return (

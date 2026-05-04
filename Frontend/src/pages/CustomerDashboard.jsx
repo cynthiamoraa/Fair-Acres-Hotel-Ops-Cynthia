@@ -1,6 +1,6 @@
 import { Camera, MessageSquare, Star, TriangleAlert } from "lucide-react";
 import { useState } from "react";
-import { API_URL } from "../services/api";
+import { postJson } from "../services/api";
 
 function StarRating({ value, onChange }) {
   return (
@@ -22,11 +22,7 @@ export default function CustomerDashboard({ issueForm, onIssueFormChange, onSubm
   async function handleReviewSubmit(e) {
     e.preventDefault();
     if (reviewForm.rating === 0) return alert("Please select a star rating.");
-    const res = await fetch(`${API_URL}/reviews`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(reviewForm),
-    });
+    const res = await postJson("/reviews", reviewForm);
     if (!res.ok) return alert("Failed to submit review.");
     setSubmitted(true);
     setReviewForm({ guestName: "", roomCode: "", rating: 0, comment: "" });

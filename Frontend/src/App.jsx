@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import ManagerLogin from "./components/ManagerLogin";
 import MobileNav from "./components/MobileNav";
 import Sidebar from "./components/Sidebar";
 import CalendarPage from "./pages/CalendarPage";
 import ManagerPage from "./pages/ManagerPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
-import { API_URL, fetchJson } from "./services/api";
+import { postJson, fetchJson } from "./services/api";
 
 export default function App() {
+  const [authed, setAuthed] = useState(() => localStorage.getItem("mgr_auth") === "1");
   const [view, setView] = useState("manager");
 
   const [stats, setStats] = useState(null);
@@ -17,6 +19,8 @@ export default function App() {
   const [issues, setIssues] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [newTask, setNewTask] = useState({ roomCode: "", title: "", notes: "", workerId: "" });
+
+  const pollRef = useRef(null);
 
   async function loadAll() {
     const [nextStats, nextRooms, nextWorkers, nextTasks, nextIssues, nextReviews] = await Promise.all([
@@ -40,22 +44,32 @@ export default function App() {
     }));
   }
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    if (!authed) return;
+    loadAll();
+    pollRef.current = setInterval(loadAll, 30000);
+    return () => clearInterval(pollRef.current);
+  }, [authed]);
+
+  function handleLogout() {
+    localStorage.removeItem("mgr_auth");
+    setAuthed(false);
+  }
 
   async function createTask(event) {
     event.preventDefault();
-    await fetch(`${API_URL}/tasks`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newTask),
-    });
+    const res = await postJson("/tasks", newTask);
+    const data = await res.json();
+    if (!res.ok) return alert(data.error || "Failed to create task.");
     setNewTask((c) => ({ ...c, title: "", notes: "" }));
     loadAll();
   }
 
+  if (!authed) return <ManagerLogin onLogin={() => setAuthed(true)} />;
+
   return (
     <div className="min-h-screen bg-[#F5F6FA] text-slate-950 flex">
-      <Sidebar activeView={view} onChangeView={setView} />
+      <Sidebar activeView={view} onChangeView={setView} onLogout={handleLogout} />
 
       <main className="flex-1 min-w-0 p-4 md:p-6 xl:p-8">
         <MobileNav activeView={view} onChangeView={setView} />

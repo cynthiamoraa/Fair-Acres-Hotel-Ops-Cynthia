@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { API_URL } from "../services/api";
+import { postJson } from "../services/api";
 
 const floors = [1, 2, 3, 4];
 
@@ -13,11 +13,7 @@ export default function AddRoomModal({ onClose, onAdded }) {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch(`${API_URL}/rooms`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, floor: Number(form.floor) }),
-    });
+    const res = await postJson("/rooms", { ...form, floor: Number(form.floor) });
     const data = await res.json();
     setLoading(false);
     if (!res.ok) return setError(data.error || "Failed to add room.");

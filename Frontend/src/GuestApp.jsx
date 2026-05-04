@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { API_URL } from "./services/api";
+import { postForm } from "./services/api";
 import CustomerDashboard from "./pages/CustomerDashboard";
 
 export default function GuestApp() {
@@ -14,7 +14,7 @@ export default function GuestApp() {
     formData.append("description", issueForm.description);
     if (issueForm.image) formData.append("image", issueForm.image);
 
-    const response = await fetch(`${API_URL}/issues`, { method: "POST", body: formData });
+    const response = await postForm("/issues", formData);
     const data = await response.json();
 
     if (!response.ok) return alert(data.error || "Submission failed.");

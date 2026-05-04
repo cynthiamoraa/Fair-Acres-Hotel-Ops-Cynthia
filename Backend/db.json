@@ -1,0 +1,35 @@
+{
+  "manager": {
+    "password": "admin1234"
+  },
+  "settings": {
+    "hotelName": "Fair acres",
+    "contactEmail": ""
+  },
+  "rooms": [],
+  "workers": [
+    {
+      "id": "w1777890247725",
+      "name": "Vinter",
+      "pin": "1234"
+    },
+    {
+      "id": "w1777890257486",
+      "name": "Njeri",
+      "pin": "1234"
+    },
+    {
+      "id": "w1777890272575",
+      "name": "korir",
+      "pin": "1234"
+    },
+    {
+      "id": "w1777890279536",
+      "name": "Moraa",
+      "pin": "1234"
+    }
+  ],
+  "tasks": [],
+  "issues": [],
+  "reviews": []
+}

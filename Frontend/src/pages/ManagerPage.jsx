@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import AddRoomModal from "../components/AddRoomModal";
 import Badge from "../components/Badge";
 import QRModal from "../components/QRModal";
-import { API_BASE_URL, API_URL } from "../services/api";
+import { API_BASE_URL, patchJson, postJson } from "../services/api";
 
 const roomPalette = {
   available: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -77,18 +77,14 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
 
   async function cycleRoomStatus(room) {
     setUpdatingRoom(room.id);
-    await fetch(`${API_URL}/rooms/${room.id}/status`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: statusCycle[room.status] || "available" }),
-    });
+    await patchJson(`/rooms/${room.id}/status`, { status: statusCycle[room.status] || "available" });
     onRoomsChange();
     setUpdatingRoom(null);
   }
 
   async function resolveIssue(id) {
     setResolvingIssue(id);
-    await fetch(`${API_URL}/issues/${id}/resolve`, { method: "PATCH" });
+    await patchJson(`/issues/${id}/resolve`, {});
     onRoomsChange();
     setResolvingIssue(null);
   }
