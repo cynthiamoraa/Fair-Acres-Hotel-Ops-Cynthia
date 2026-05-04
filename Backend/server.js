@@ -79,7 +79,7 @@ function loadDb() {
 }
 
 function saveDb() {
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+  fs.writeFileSync(DB_PATH, JSON.stringify(db));
 }
 
 const db = loadDb();
@@ -214,6 +214,42 @@ app.get("/api/stats", (_, res) => {
 
 // ── Rooms ─────────────────────────────────────────────────────────────────────
 app.get("/api/rooms", (_, res) => res.json(db.rooms));
+
+app.post("/api/rooms/bulk", (req, res) => {
+  const { prefix, floor, from, to, status = "available" } = req.body;
+  if (!prefix || !floor || from == null || to == null)
+    return res.status(400).json({ error: "prefix, floor, from, and to are required." });
+  if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid status." });
+  const start = Number(from);
+  const end = Number(to);
+  if (isNaN(start) || isNaN(end) || start > end || end - start > 199)
+    return res.status(400).json({ error: "Invalid range. Max 200 rooms at once." });
+
+  // Build a Set of existing codes for O(1) duplicate lookup
+  const existingCodes = new Set(db.rooms.map((r) => r.code.toLowerCase()));
+
+  // Compute starting ID once outside the loop
+  let nextId = db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1;
+  const floorNum = Number(floor);
+
+  const created = [];
+  const skipped = [];
+
+  for (let n = start; n <= end; n++) {
+    const code = `${prefix}${n}`;
+    if (existingCodes.has(code.toLowerCase())) {
+      skipped.push(code);
+      continue;
+    }
+    const room = { id: nextId++, code, floor: floorNum, status };
+    db.rooms.push(room);
+    existingCodes.add(code.toLowerCase());
+    created.push(room);
+  }
+
+  if (created.length) saveDb();
+  return res.status(201).json({ created: created.length, skipped: skipped.length, skippedCodes: skipped });
+});
 
 app.post("/api/rooms", (req, res) => {
   const { code, floor, status = "available" } = req.body;

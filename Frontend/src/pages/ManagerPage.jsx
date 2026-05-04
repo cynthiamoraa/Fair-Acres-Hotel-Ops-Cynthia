@@ -25,7 +25,7 @@ const TABS = [
 
 export default function ManagerPage({ stats, rooms, workers, issues, reviews, tasks, newTask, onNewTaskChange, onCreateTask, onRoomsChange }) {
   const [tab, setTab] = useState("overview");
-  const [qrRoom, setQrRoom] = useState(null);
+  const [showQR, setShowQR] = useState(false);
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [search, setSearch] = useState("");
   const [openCardMenu, setOpenCardMenu] = useState(null);
@@ -137,6 +137,12 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
               </div>
             )}
           </div>
+          <button
+            onClick={() => setShowQR(true)}
+            className="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            <QrCode size={17} /> Guest QR
+          </button>
         </div>
       </header>
 
@@ -209,12 +215,9 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                         <BedDouble size={18} />
                       </div>
                     </div>
-                    <div className="mt-4 flex items-center justify-between">
+                    <div className="mt-4">
                       <button onClick={() => cycleRoomStatus(room)} disabled={updatingRoom === room.id} className="disabled:opacity-50">
                         <Badge value={room.status} />
-                      </button>
-                      <button onClick={() => setQrRoom(room)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-200 hover:text-slate-700" title="Generate QR">
-                        <QrCode size={15} />
                       </button>
                     </div>
                   </div>
@@ -442,7 +445,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
         </div>
       )}
 
-      {qrRoom && <QRModal room={qrRoom} onClose={() => setQrRoom(null)} />}
+      {showQR && <QRModal onClose={() => setShowQR(false)} />}
       {showAddRoom && <AddRoomModal onClose={() => setShowAddRoom(false)} onAdded={onRoomsChange} />}
     </section>
   );

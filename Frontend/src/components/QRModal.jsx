@@ -2,18 +2,17 @@ import QRCode from "qrcode";
 import { useEffect, useRef } from "react";
 import { Download, X } from "lucide-react";
 
-export default function QRModal({ room, onClose }) {
+export default function QRModal({ onClose }) {
   const canvasRef = useRef(null);
-
-  const guestUrl = `${window.location.origin}/guest?location=${room.code}`;
+  const guestUrl = `${window.location.origin}/guest`;
 
   useEffect(() => {
-    QRCode.toCanvas(canvasRef.current, guestUrl, { width: 240, margin: 2 });
+    QRCode.toCanvas(canvasRef.current, guestUrl, { width: 260, margin: 2 });
   }, [guestUrl]);
 
   function handleDownload() {
     const link = document.createElement("a");
-    link.download = `QR-${room.code}.png`;
+    link.download = "GuestPortal-QR.png";
     link.href = canvasRef.current.toDataURL();
     link.click();
   }
@@ -23,8 +22,8 @@ export default function QRModal({ room, onClose }) {
       <div className="bg-white rounded-3xl p-6 shadow-xl w-full max-w-xs space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-bold text-slate-950 text-lg">{room.code}</p>
-            <p className="text-xs text-slate-500">Floor {room.floor} · Guest QR Code</p>
+            <p className="font-bold text-slate-950 text-lg">Guest Portal QR</p>
+            <p className="text-xs text-slate-500">Print and place at reception or in rooms</p>
           </div>
           <button onClick={onClose} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
             <X size={18} />
