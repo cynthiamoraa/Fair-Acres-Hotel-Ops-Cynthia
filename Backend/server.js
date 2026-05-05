@@ -89,11 +89,24 @@ if (!db.manager) db.manager = { password: "admin1234" };
 if (!db.settings) db.settings = { hotelName: "", contactEmail: "" };
 if (!db.reviews) db.reviews = [];
 
+// Fix any duplicate room IDs left from old ad-hoc ID generation
+(function dedupeRooms() {
+  const seen = new Set();
+  let changed = false;
+  db.rooms = db.rooms.filter((r) => {
+    if (seen.has(r.id)) { changed = true; return false; }
+    seen.add(r.id);
+    return true;
+  });
+  if (changed) saveDb();
+})();
+
 // Rebuild in-memory duplicate hash sets from persisted tasks
 const usedImageHashes = new Set(db.tasks.filter((t) => t.proofImageHash).map((t) => t.proofImageHash));
 const hashToTaskId = new Map(db.tasks.filter((t) => t.proofImageHash).map((t) => [t.proofImageHash, t.id]));
 
 // Sequence counters derived from persisted data
+let roomIdSeq = db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1;
 let taskIdSeq = db.tasks.length ? Math.max(...db.tasks.map((t) => t.id)) + 1 : 1;
 let issueIdSeq = db.issues.length ? Math.max(...db.issues.map((i) => i.id)) + 1 : 1;
 let reviewIdSeq = db.reviews.length ? Math.max(...db.reviews.map((r) => r.id)) + 1 : 1;
@@ -227,21 +240,14 @@ app.post("/api/rooms/bulk", (req, res) => {
 
   // Build a Set of existing codes for O(1) duplicate lookup
   const existingCodes = new Set(db.rooms.map((r) => r.code.toLowerCase()));
-
-  // Compute starting ID once outside the loop
-  let nextId = db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1;
   const floorNum = Number(floor);
-
   const created = [];
   const skipped = [];
 
   for (let n = start; n <= end; n++) {
     const code = `${prefix}${n}`;
-    if (existingCodes.has(code.toLowerCase())) {
-      skipped.push(code);
-      continue;
-    }
-    const room = { id: nextId++, code, floor: floorNum, status };
+    if (existingCodes.has(code.toLowerCase())) { skipped.push(code); continue; }
+    const room = { id: roomIdSeq++, code, floor: floorNum, status };
     db.rooms.push(room);
     existingCodes.add(code.toLowerCase());
     created.push(room);
@@ -257,7 +263,7 @@ app.post("/api/rooms", (req, res) => {
   if (db.rooms.find((r) => r.code.toLowerCase() === code.toLowerCase()))
     return res.status(409).json({ error: "Room code already exists." });
   if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid status." });
-  const room = { id: db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1, code, floor: Number(floor), status };
+  const room = { id: roomIdSeq++, code, floor: Number(floor), status };
   db.rooms.push(room);
   saveDb();
   return res.status(201).json(room);

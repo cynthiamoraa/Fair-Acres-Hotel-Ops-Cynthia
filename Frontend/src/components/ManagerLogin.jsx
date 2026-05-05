@@ -24,7 +24,7 @@ export default function ManagerLogin({ onLogin }) {
     <div className="min-h-screen bg-[#F5F6FA] flex items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center gap-3">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#111827]">
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-[#BE185D]">
             <Building2 size={26} className="text-[#F7B955]" />
           </div>
           <div className="text-center">
@@ -53,7 +53,7 @@ export default function ManagerLogin({ onLogin }) {
           {error && <p className="text-sm text-rose-600">{error}</p>}
 
           <button disabled={loading}
-            className="w-full h-12 rounded-xl bg-[#111827] text-white font-semibold text-sm hover:bg-slate-800 disabled:opacity-50">
+            className="w-full h-12 rounded-xl bg-[#BE185D] text-white font-semibold text-sm hover:bg-pink-700 disabled:opacity-50">
             {loading ? "Signing in…" : "Sign In"}
           </button>
         </form>

@@ -68,12 +68,14 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
     { label: "Maintenance", value: safeStats.maintenance, color: "bg-rose-500" },
   ];
 
-  const filteredRooms = rooms.filter(
-    (r) =>
-      r.code.toLowerCase().includes(search.toLowerCase()) ||
-      r.status.toLowerCase().includes(search.toLowerCase()) ||
-      String(r.floor).includes(search)
-  );
+  const filteredRooms = rooms
+    .filter((r, idx, arr) => arr.findIndex((x) => x.id === r.id) === idx) // dedupe by id
+    .filter(
+      (r) =>
+        r.code.toLowerCase().includes(search.toLowerCase()) ||
+        r.status.toLowerCase().includes(search.toLowerCase()) ||
+        String(r.floor).includes(search)
+    );
 
   async function cycleRoomStatus(room) {
     setUpdatingRoom(room.id);
@@ -151,7 +153,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
         {TABS.map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition
-              ${tab === id ? "bg-[#111827] text-white shadow" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"}`}>
+              ${tab === id ? "bg-[#BE185D] text-white shadow" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"}`}>
             <Icon size={15} /> {label}
           </button>
         ))}
@@ -198,7 +200,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                   <p className="text-sm text-slate-500">Click a status badge to cycle its state</p>
                 </div>
                 <button onClick={() => setShowAddRoom(true)}
-                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#111827] px-4 text-sm font-semibold text-white hover:bg-slate-800">
+                  className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#BE185D] px-4 text-sm font-semibold text-white hover:bg-pink-700">
                   <Plus size={17} /> Add Room
                 </button>
               </div>
@@ -225,7 +227,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-[#111827] p-5 text-white shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-[#BE185D] p-5 text-white shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="text-lg font-bold">Room Status</h3>
@@ -270,7 +272,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                 value={newTask.workerId} onChange={(e) => onNewTaskChange({ ...newTask, workerId: e.target.value })}>
                 {workers.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
               </select>
-              <button className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#F7B955] text-sm font-bold text-slate-950 hover:bg-[#f4ad35]">
+              <button className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#BE185D] text-sm font-bold text-white hover:bg-pink-700">
                 <ClipboardList size={18} /> Create Task
               </button>
             </div>

@@ -10,7 +10,7 @@ export default function MobileNav({ activeView, onChangeView }) {
           key={view.id}
           onClick={() => onChangeView(view.id)}
           className={`px-4 py-2 rounded-2xl text-sm font-semibold ${
-            activeView === view.id ? "bg-[#111827] text-white" : "bg-white border border-slate-200"
+            activeView === view.id ? "bg-[#BE185D] text-white" : "bg-white border border-slate-200"
           }`}
         >
           {view.label}

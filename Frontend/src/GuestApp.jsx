@@ -25,8 +25,8 @@ export default function GuestApp() {
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] text-slate-950">
-      <header className="bg-[#111827] text-white px-6 py-4 flex items-center gap-3">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#F7B955] text-slate-950 font-bold text-sm">FA</div>
+      <header className="bg-[#BE185D] text-white px-6 py-4 flex items-center gap-3">
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#F9A8D4] text-[#BE185D] font-bold text-sm">FA</div>
         <div>
           <p className="font-bold leading-tight">Fair Acres</p>
           <p className="text-xs text-slate-400">Guest Portal</p>

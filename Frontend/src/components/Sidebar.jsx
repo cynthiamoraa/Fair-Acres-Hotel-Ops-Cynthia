@@ -16,9 +16,9 @@ export default function Sidebar({ activeView, onChangeView, onLogout }) {
   }
 
   return (
-    <aside className="hidden md:flex w-72 shrink-0 bg-[#111827] text-slate-200 p-5 flex-col">
+    <aside className="hidden md:flex w-72 shrink-0 bg-[#BE185D] text-slate-200 p-5 flex-col">
       <div className="flex items-center gap-3 px-2">
-        <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#F7B955] text-slate-950">
+        <div className="grid h-11 w-11 place-items-center rounded-xl bg-[#F9A8D4] text-[#BE185D]">
           <Building2 size={22} />
         </div>
         <div>
@@ -36,7 +36,7 @@ export default function Sidebar({ activeView, onChangeView, onLogout }) {
               key={item.id}
               onClick={() => onChangeView(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                isActive ? "bg-[#F7B955] text-slate-950 shadow-lg shadow-amber-500/20" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                isActive ? "bg-[#F9A8D4] text-[#BE185D] shadow-lg shadow-pink-500/20" : "text-pink-200 hover:bg-white/5 hover:text-white"
               }`}
             >
               <Icon size={18} /> {item.label}
@@ -56,7 +56,7 @@ export default function Sidebar({ activeView, onChangeView, onLogout }) {
                 key={item.id}
                 onClick={() => onChangeView(item.id)}
                 className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
-                  isActive ? "bg-white/10 text-white" : "text-slate-400 hover:bg-white/5 hover:text-white"
+                  isActive ? "bg-white/10 text-white" : "text-pink-200 hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icon size={18} /> {item.label}
