@@ -406,7 +406,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const avg = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length;
-                  return <Star key={n} size={18} className={n <= Math.round(avg) ? "fill-amber-400 text-amber-400" : "text-slate-300"} />;
+                  return <Star key={n} size={18} className={n <= Math.round(avg) ? "fill-amber-400 text-rose-700" : "text-slate-300"} />;
                 })}
               </div>
               <p className="text-sm font-semibold text-slate-700">
@@ -433,7 +433,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                     </div>
                     <div className="flex mt-2">
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <Star key={n} size={14} className={n <= review.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"} />
+                        <Star key={n} size={14} className={n <= review.rating ? "fill-amber-400 text-rose-700" : "text-slate-300"} />
                       ))}
                     </div>
                   </div>

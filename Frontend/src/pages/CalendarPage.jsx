@@ -82,7 +82,7 @@ export default function CalendarPage({ tasks }) {
                 >
                   {day}
                   {hasTasks && (
-                    <span className={`mt-0.5 h-1.5 w-1.5 rounded-full ${isSelected ? "bg-amber-400" : "bg-slate-400"}`} />
+                    <span className={`mt-0.5 h-1.5 w-1.5 rounded-full ${isSelected ? "bg-amber-800" : "bg-slate-400"}`} />
                   )}
                 </button>
               );
