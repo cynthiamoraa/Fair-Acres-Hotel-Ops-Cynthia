@@ -1,4 +1,0 @@
-.env
-*.log
-Backend/uploads
-Backend/db.json
