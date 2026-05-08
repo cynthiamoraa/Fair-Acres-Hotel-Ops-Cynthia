@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import AddRoomModal from "../components/AddRoomModal";
 import Badge from "../components/Badge";
 import QRModal from "../components/QRModal";
+import OverdueBadge, { COMPLAINT_SLA_MS, TASK_SLA_MS, isOverdue } from "../components/OverdueBadge";
 import { API_BASE_URL, patchJson, postJson } from "../services/api";
 
 const roomPalette = {
@@ -319,7 +320,11 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                 </p>
                 {focusedWorkerTasks.length === 0 && <p className="text-sm text-slate-500">No tasks assigned yet.</p>}
                 {focusedWorkerTasks.map((task) => (
-                  <div key={task.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div key={task.id} className={`rounded-2xl border bg-white p-4 shadow-sm ${
+                      task.status === "pending" && isOverdue(task.assignedAt || task.createdAt, TASK_SLA_MS)
+                        ? "border-red-300 bg-red-50"
+                        : "border-slate-200"
+                    }`}>
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-slate-950">{task.title}</p>
@@ -328,6 +333,11 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                       </div>
                       <Badge value={task.status} />
                     </div>
+                    {task.status === "pending" && (
+                      <div className="mt-2">
+                        <OverdueBadge isoDate={task.assignedAt || task.createdAt} slaMs={TASK_SLA_MS} />
+                      </div>
+                    )}
                     {task.status === "completed" && (
                       <div className="mt-3 flex items-center gap-3">
                         <p className="text-xs text-slate-400">Completed {new Date(task.completedAt).toLocaleString()}</p>
@@ -373,6 +383,11 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-bold text-slate-950">{issue.location}</p>
+                      {issue.ticketNo && (
+                        <span className="rounded-full bg-pink-100 text-[#BE185D] border border-pink-200 px-2.5 py-0.5 text-xs font-bold tracking-widest">
+                          {issue.ticketNo}
+                        </span>
+                      )}
                       <Badge value={issue.status} />
                     </div>
                     <p className="mt-1 text-sm text-slate-600">{issue.description || "No description provided."}</p>

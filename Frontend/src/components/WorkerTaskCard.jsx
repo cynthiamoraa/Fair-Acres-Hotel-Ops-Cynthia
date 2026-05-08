@@ -1,6 +1,7 @@
 import { Camera, AlertCircle } from "lucide-react";
 import { useState } from "react";
 import Badge from "./Badge";
+import OverdueBadge, { TASK_SLA_MS } from "./OverdueBadge";
 import { API_BASE_URL } from "../services/api";
 
 const MAX_PHOTO_AGE_MS = 2 * 60 * 1000; // 2 minutes
@@ -33,16 +34,26 @@ export default function WorkerTaskCard({ task, onComplete }) {
     setWarning("");
   }
 
+  const startTime = task.assignedAt || task.createdAt;
+
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-4">
+    <div className={`bg-white border rounded-3xl p-4 ${
+      task.status === "pending" ? "border-slate-200" : "border-slate-200"
+    }`}>
       <div className="flex justify-between items-start gap-2">
-        <div>
+        <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-950">{task.title}</p>
           <p className="text-sm text-slate-600">{task.roomCode}</p>
           {task.notes && <p className="text-sm text-slate-500 mt-1">{task.notes}</p>}
         </div>
         <Badge value={task.status} />
       </div>
+
+      {task.status === "pending" && (
+        <div className="mt-2">
+          <OverdueBadge isoDate={startTime} slaMs={TASK_SLA_MS} />
+        </div>
+      )}
 
       {task.status === "pending" ? (
         <div className="mt-4 space-y-2">
