@@ -2,10 +2,6 @@
   "name": "fair-acres-hms",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "Frontend",
-    "Backend"
-  ],
   "scripts": {
     "install:frontend": "cd Frontend && npm install",
     "install:backend": "cd Backend && npm install",

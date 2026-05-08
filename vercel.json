@@ -9,30 +9,26 @@
       }
     },
     {
-      "src": "api/index.js",
+      "src": "Backend/server.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "dest": "Backend/server.js"
     },
     {
       "src": "/uploads/(.*)",
-      "dest": "/api/index.js"
+      "dest": "Backend/server.js"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/Frontend/dist/assets/$1"
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|svg|ico|json))",
-      "dest": "/Frontend/dist/$1"
+      "src": "/Frontend/dist/(.*)",
+      "dest": "Frontend/dist/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/Frontend/dist/index.html"
+      "dest": "Frontend/dist/index.html"
     }
   ]
 }
