@@ -443,7 +443,16 @@ app.post("/api/tasks/:id/complete", upload.single("image"), multerError, async (
 
     if (task.issueId) {
       const issue = db.issues.find((i) => i.id === task.issueId);
-      if (issue && issue.status === "open") issue.status = "resolved";
+      if (issue && issue.status === "open") {
+        issue.status = "resolved";
+        issue.resolvedAt = new Date().toISOString();
+        
+        // Remove room from maintenance when issue is resolved
+        const room = db.rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
+        if (room && room.status === "maintenance") {
+          room.status = "available";
+        }
+      }
     }
 
     saveJsonDb(db);
@@ -474,17 +483,35 @@ app.get("/api/issues", async (_, res) => {
 
 app.patch("/api/issues/:id/resolve", async (req, res) => {
   if (USE_POSTGRES) {
-    const issue = await pgOps.updateIssue(Number(req.params.id), {
+    const issues = await pgOps.getIssues();
+    const issue = issues.find((i) => i.id === Number(req.params.id));
+    if (!issue) return res.status(404).json({ error: "Issue not found." });
+    
+    await pgOps.updateIssue(Number(req.params.id), {
       status: "resolved",
       resolved_at: new Date().toISOString(),
     });
-    if (!issue) return res.status(404).json({ error: "Issue not found." });
+    
+    // Remove room from maintenance
+    const rooms = await pgOps.getRooms();
+    const room = rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
+    if (room && room.status === "maintenance") {
+      await pgOps.updateRoom(room.id, { status: "available" });
+    }
+    
     return res.json(issue);
   } else {
     const issue = db.issues.find((i) => i.id === Number(req.params.id));
     if (!issue) return res.status(404).json({ error: "Issue not found." });
     issue.status = "resolved";
     issue.resolvedAt = new Date().toISOString();
+    
+    // Remove room from maintenance
+    const room = db.rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
+    if (room && room.status === "maintenance") {
+      room.status = "available";
+    }
+    
     saveJsonDb(db);
     return res.json(issue);
   }

@@ -1,9 +1,21 @@
-const { neon } = require("@neondatabase/serverless");
 const fs = require("fs");
 const path = require("path");
 
 const USE_POSTGRES = !!process.env.DATABASE_URL;
-const sql = USE_POSTGRES ? neon(process.env.DATABASE_URL) : null;
+let sql = null;
+
+// Only load PostgreSQL driver if DATABASE_URL is set
+if (USE_POSTGRES) {
+  try {
+    const { neon } = require("@neondatabase/serverless");
+    sql = neon(process.env.DATABASE_URL);
+    console.log("✓ PostgreSQL driver loaded");
+  } catch (error) {
+    console.error("Failed to load PostgreSQL driver:", error.message);
+    console.log("Falling back to JSON database");
+    USE_POSTGRES = false;
+  }
+}
 
 const DB_PATH = path.join(__dirname, "db.json");
 const DEFAULT_DB = {

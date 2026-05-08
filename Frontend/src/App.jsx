@@ -6,6 +6,7 @@ import CalendarPage from "./pages/CalendarPage";
 import ManagerPage from "./pages/ManagerPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import SettingsPage from "./pages/SettingsPage";
+import TasksPage from "./pages/TasksPage";
 import { postJson, fetchJson } from "./services/api";
 
 export default function App() {
@@ -82,10 +83,18 @@ export default function App() {
             issues={issues}
             reviews={reviews}
             tasks={tasks}
+            onRoomsChange={loadAll}
+          />
+        )}
+
+        {view === "tasks" && (
+          <TasksPage
+            tasks={tasks}
+            workers={workers}
             newTask={newTask}
             onNewTaskChange={setNewTask}
             onCreateTask={createTask}
-            onRoomsChange={loadAll}
+            onTasksChange={loadAll}
           />
         )}
 

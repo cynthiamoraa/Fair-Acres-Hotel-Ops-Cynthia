@@ -1,5 +1,6 @@
 const views = [
   { id: "manager", label: "Dashboard" },
+  { id: "tasks", label: "Tasks" },
 ];
 
 export default function MobileNav({ activeView, onChangeView }) {

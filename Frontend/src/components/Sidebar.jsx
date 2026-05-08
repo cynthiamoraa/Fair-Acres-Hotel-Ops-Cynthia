@@ -1,7 +1,8 @@
-import { Bell, Building2, CalendarDays, LayoutDashboard, LogOut, Settings } from "lucide-react";
+import { Bell, Building2, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Settings } from "lucide-react";
 
 const primaryNav = [
   { id: "manager", label: "Dashboard", icon: LayoutDashboard },
+  { id: "tasks", label: "Tasks", icon: ClipboardList },
 ];
 
 const secondaryNav = [

@@ -1,4 +1,4 @@
-import { Building2, ClipboardList, Eye, EyeOff, LogOut } from "lucide-react";
+import { Building2, Eye, EyeOff, LogOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import WorkerTaskCard from "./components/WorkerTaskCard";
 import { API_URL, fetchJson, postForm, postJson } from "./services/api";
@@ -75,7 +75,7 @@ export default function WorkerApp() {
         {!worker ? (
           <LoginScreen workers={workers} onLogin={handleLogin} />
         ) : (
-          <TaskScreen tasks={tasks} pending={pending} completed={completed} onComplete={completeTask} />
+          <TaskScreen tasks={tasks} pending={pending} completed={completed} onComplete={completeTask} worker={worker} />
         )}
       </main>
     </div>
@@ -92,7 +92,6 @@ function LoginScreen({ workers, onLogin }) {
   if (!workers.length) {
     return (
       <div className="mt-16 text-center space-y-2">
-        <ClipboardList size={36} className="mx-auto text-slate-300" />
         <p className="font-semibold text-slate-700">No workers registered yet.</p>
         <p className="text-sm text-slate-500">Ask your manager to add workers in Settings.</p>
       </div>
@@ -160,31 +159,93 @@ function LoginScreen({ workers, onLogin }) {
   );
 }
 
-function TaskScreen({ tasks, pending, completed, onComplete }) {
+function TaskScreen({ tasks, pending, completed, onComplete, worker }) {
+  const pendingTasks = tasks.filter((t) => t.status === "pending");
+  const completedTasks = tasks.filter((t) => t.status === "completed");
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  // Calculate performance stats
+  const completedToday = completedTasks.filter((t) => {
+    const completedDate = new Date(t.completedAt);
+    const today = new Date();
+    return completedDate.toDateString() === today.toDateString();
+  }).length;
+
   return (
-    <div className="space-y-4 mt-4">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-2xl font-bold text-slate-950">{pending}</p>
-          <p className="text-sm text-slate-500 mt-0.5">Pending</p>
+    <div className="space-y-5 mt-4">
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-3xl p-6 text-white shadow-lg">
+        <p className="text-sm text-pink-100 font-medium">Welcome back,</p>
+        <h1 className="text-2xl font-bold mt-1">{worker?.name || "Worker"}</h1>
+        <p className="text-sm text-pink-100 mt-2">You've completed {completedToday} task{completedToday !== 1 ? 's' : ''} today</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border border-pink-100 rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase text-amber-600 mb-1">Pending</p>
+          <p className="text-3xl font-bold text-slate-950">{pending}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-2xl font-bold text-emerald-600">{completed}</p>
-          <p className="text-sm text-slate-500 mt-0.5">Completed</p>
+        <div className="bg-white border border-pink-100 rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase text-emerald-600 mb-1">Done</p>
+          <p className="text-3xl font-bold text-slate-950">{completed}</p>
+        </div>
+        <div className="bg-white border border-pink-100 rounded-2xl p-4 shadow-sm">
+          <p className="text-xs font-semibold uppercase text-pink-600 mb-1">Today</p>
+          <p className="text-3xl font-bold text-slate-950">{completedToday}</p>
         </div>
       </div>
 
+      {/* Priority Alert */}
+      {pendingTasks.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <p className="text-sm font-semibold text-amber-900">You have {pendingTasks.length} pending task{pendingTasks.length !== 1 ? 's' : ''}</p>
+          <p className="text-xs text-amber-700 mt-1">Complete them as soon as possible to maintain service quality</p>
+        </div>
+      )}
+
       {tasks.length === 0 ? (
-        <div className="text-center py-16 space-y-2">
-          <ClipboardList size={36} className="mx-auto text-slate-300" />
-          <p className="text-slate-500 text-sm">No tasks assigned yet.</p>
+        <div className="bg-white border border-pink-100 rounded-3xl p-12 text-center shadow-sm">
+          <h3 className="text-xl font-bold text-slate-900 mb-2">All caught up!</h3>
+          <p className="text-slate-500">No tasks assigned at the moment.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {tasks.map((task) => (
-            <WorkerTaskCard key={task.id} task={task} onComplete={onComplete} />
-          ))}
-        </div>
+        <>
+          {/* Pending Tasks */}
+          {pendingTasks.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold text-slate-900">Pending Tasks</h2>
+                <span className="bg-amber-100 text-amber-700 text-xs font-bold px-3 py-1 rounded-full">
+                  {pendingTasks.length}
+                </span>
+              </div>
+              {pendingTasks.map((task) => (
+                <WorkerTaskCard key={task.id} task={task} onComplete={onComplete} />
+              ))}
+            </div>
+          )}
+
+          {/* Completed Tasks */}
+          {completedTasks.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <button 
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className="text-lg font-bold text-slate-900 hover:text-pink-600 transition"
+                >
+                  Completed Tasks {showCompleted ? '▼' : '▶'}
+                </button>
+                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full">
+                  {completedTasks.length}
+                </span>
+              </div>
+              {showCompleted && completedTasks.map((task) => (
+                <WorkerTaskCard key={task.id} task={task} onComplete={onComplete} />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
