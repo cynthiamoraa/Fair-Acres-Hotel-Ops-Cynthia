@@ -648,54 +648,58 @@ if (IS_PRODUCTION) {
   });
 }
 
-const server = app.listen(PORT, () => {
-  console.log(`Hotel Ops API running on http://localhost:${PORT}`);
-  console.log("✓ Server is ready and listening for requests");
-  console.log("Press Ctrl+C to stop the server");
-});
+// Only start server if not in serverless environment (Vercel)
+if (process.env.VERCEL !== '1' && !module.parent) {
+  const server = app.listen(PORT, () => {
+    console.log(`Hotel Ops API running on http://localhost:${PORT}`);
+    console.log("✓ Server is ready and listening for requests");
+    console.log("Press Ctrl+C to stop the server");
+  });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`Port ${PORT} is already in use. Trying port ${PORT + 1}...`);
-    const altServer = app.listen(PORT + 1, () => {
-      console.log(`Hotel Ops API running on http://localhost:${PORT + 1}`);
-      console.log("✓ Server is ready and listening for requests");
-      console.log("Press Ctrl+C to stop the server");
-    });
-    altServer.on('error', (altErr) => {
-      console.error('Failed to start server:', altErr.message);
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Trying port ${PORT + 1}...`);
+      const altServer = app.listen(PORT + 1, () => {
+        console.log(`Hotel Ops API running on http://localhost:${PORT + 1}`);
+        console.log("✓ Server is ready and listening for requests");
+        console.log("Press Ctrl+C to stop the server");
+      });
+      altServer.on('error', (altErr) => {
+        console.error('Failed to start server:', altErr.message);
+        process.exit(1);
+      });
+    } else {
+      console.error('Server error:', err);
       process.exit(1);
-    });
-  } else {
-    console.error('Server error:', err);
-    process.exit(1);
-  }
-});
+    }
+  });
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
+  process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+  });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
 
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, closing server gracefully...');
-  if (server && server.close) {
-    server.close(() => process.exit(0));
-  } else {
-    process.exit(0);
-  }
-});
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, closing server gracefully...');
+    if (server && server.close) {
+      server.close(() => process.exit(0));
+    } else {
+      process.exit(0);
+    }
+  });
 
-process.on('SIGINT', () => {
-  console.log('\nSIGINT received, closing server gracefully...');
-  if (server && server.close) {
-    server.close(() => process.exit(0));
-  } else {
-    process.exit(0);
-  }
-});
+  process.on('SIGINT', () => {
+    console.log('\nSIGINT received, closing server gracefully...');
+    if (server && server.close) {
+      server.close(() => process.exit(0));
+    } else {
+      process.exit(0);
+    }
+  });
+}
 
+// Export app for Vercel serverless
 module.exports = app;
