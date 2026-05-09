@@ -50,11 +50,16 @@ npm run dev
 ## Default Login
 
 **Manager Dashboard:**
+- URL: `http://localhost:5173` (local) or your Vercel URL
 - Password: `admin1234`
+- ⚠️ **IMPORTANT:** Change password after first login!
 
 **Worker App:**
+- URL: `http://localhost:5173/worker` (local) or your Vercel URL + `/worker`
 - Create workers in Manager Dashboard → Settings
 - Login with Worker ID and PIN
+
+**First-Time Production Setup:** See `FIRST_TIME_SETUP.md`
 
 ## Features
 
@@ -86,6 +91,7 @@ npm run dev
 
 ## Deployment
 
+**First-Time Setup:** See `FIRST_TIME_SETUP.md` 👈 **START HERE**  
 **Quick Start:** See `VERCEL_QUICKSTART.md`  
 **Full Guide:** See `VERCEL_DEPLOY.md`  
 **Migration from Render:** See `RENDER_TO_VERCEL.md`

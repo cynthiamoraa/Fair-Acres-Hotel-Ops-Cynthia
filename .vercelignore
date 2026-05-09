@@ -4,7 +4,7 @@ node_modules
 *.log
 .DS_Store
 
-# Documentation
+# Documentation (keep only README.md for Vercel)
 *.md
 !README.md
 
@@ -12,14 +12,6 @@ node_modules
 start.js
 start.bat
 start.sh
-
-# Render-specific files
-.renderignore
-.env.render
-RENDER_*.md
-DEPLOY_RENDER.md
-DEPLOY_UNIFIED.md
-DEPLOYMENT_GUIDE.md
 
 # Local development
 Backend/db.json

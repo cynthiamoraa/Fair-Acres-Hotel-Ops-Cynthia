@@ -104,11 +104,17 @@ function LoginScreen({ workers, onLogin }) {
     if (!pin) return setError("Please enter your PIN.");
     setError("");
     setLoading(true);
-    const res = await postJson(`/auth/worker/login`, { workerId: selectedId, pin });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) return setError(data.error || "Login failed.");
-    onLogin(data.worker);
+    try {
+      const res = await postJson(`/auth/worker/login`, { workerId: selectedId, pin });
+      const data = await res.json();
+      setLoading(false);
+      if (!res.ok) return setError(data.error || "Login failed.");
+      onLogin(data.worker);
+    } catch (err) {
+      setLoading(false);
+      setError("Cannot connect to server. Please check your connection.");
+      console.error("Login error:", err);
+    }
   }
 
   return (

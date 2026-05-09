@@ -1,6 +1,6 @@
 import { Building2, Eye, EyeOff, Lock } from "lucide-react";
 import { useState } from "react";
-import { postJson } from "../services/api";
+import { postJson, API_URL } from "../services/api";
 
 export default function ManagerLogin({ onLogin }) {
   const [password, setPassword] = useState("");
@@ -12,12 +12,21 @@ export default function ManagerLogin({ onLogin }) {
     e.preventDefault();
     setError("");
     setLoading(true);
-    const res = await postJson("/auth/manager/login", { password });
-    const data = await res.json();
-    setLoading(false);
-    if (!res.ok) return setError(data.error || "Login failed.");
-    localStorage.setItem("mgr_auth", "1");
-    onLogin();
+    try {
+      console.log('Attempting login to:', `${API_URL}/auth/manager/login`);
+      const res = await postJson("/auth/manager/login", { password });
+      console.log('Response status:', res.status);
+      const data = await res.json();
+      console.log('Response data:', data);
+      setLoading(false);
+      if (!res.ok) return setError(data.error || "Login failed.");
+      localStorage.setItem("mgr_auth", "1");
+      onLogin();
+    } catch (err) {
+      setLoading(false);
+      setError("Cannot connect to server. Please check your connection.");
+      console.error("Login error:", err);
+    }
   }
 
   return (
