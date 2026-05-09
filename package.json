@@ -8,7 +8,8 @@
     "start:backend": "cd Backend && npm start",
     "start:frontend": "cd Frontend && npm run dev",
     "install:all": "npm install && cd Backend && npm install && cd ../Frontend && npm install",
-    "build:frontend": "cd Frontend && npm run build"
+    "build:frontend": "cd Frontend && npm run build",
+    "vercel-build": "cd Frontend && npm install && npm run build"
   },
   "keywords": ["hotel", "management", "housekeeping"],
   "author": "",

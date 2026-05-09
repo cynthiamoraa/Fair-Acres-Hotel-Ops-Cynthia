@@ -15,7 +15,7 @@
 3. **Deploy from the Backend directory**:
    ```bash
    cd Backend
-   vercel
+   vercel --prod
    ```
 
 4. **Follow the prompts**:
@@ -26,47 +26,27 @@
    - Directory? ./
    - Override settings? No
 
-5. **For production deployment**:
-   ```bash
-   vercel --prod
-   ```
+## Environment Variables:
 
-## Important Notes:
-
-⚠️ **File Storage Limitation**: Vercel serverless functions are stateless. Your current implementation uses:
-- Local file system for `db.json` (will reset on each deployment)
-- Local `uploads/` folder for images (will be lost)
-
-### Recommended Changes for Production:
-
-1. **Database**: Replace `db.json` with a real database:
-   - MongoDB Atlas (free tier available)
-   - PostgreSQL on Vercel
-   - Supabase
-   - PlanetScale
-
-2. **File Storage**: Replace local uploads with cloud storage:
-   - Vercel Blob Storage
-   - AWS S3
-   - Cloudinary
-   - Uploadcare
-
-3. **Environment Variables**: Set in Vercel dashboard:
-   - Go to Project Settings → Environment Variables
-   - Add `CLIENT_ORIGIN` with your frontend URL
-
-## Current Setup (Development Only):
-
-The current setup will work on Vercel but:
-- Data will reset on each deployment
-- Uploaded images will be lost
-- Not suitable for production use
-
-## Test Your Deployment:
-
-After deployment, test the API:
-```bash
-curl https://your-app.vercel.app/api/health
+Set in Vercel dashboard (Project Settings → Environment Variables):
+```
+DATABASE_URL=<your-database-connection-string>
+NODE_ENV=production
+CLIENT_ORIGIN=https://your-frontend.vercel.app
 ```
 
-Update your frontend's API URL to point to the Vercel deployment.
+## Database Options:
+
+1. **Neon** (Recommended): See `NEON_SETUP.md`
+2. **Supabase**: See `SUPABASE_SETUP.md`
+
+## File Storage:
+
+For production, replace local uploads with:
+- Vercel Blob Storage
+- Cloudinary
+- AWS S3
+
+## Complete Guide:
+
+See `../VERCEL_DEPLOY.md` for full deployment instructions.

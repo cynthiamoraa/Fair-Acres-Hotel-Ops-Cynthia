@@ -86,7 +86,9 @@ npm run dev
 
 ## Deployment
 
-See `RENDER_MANUAL.md` for production deployment instructions.
+**Quick Start:** See `VERCEL_QUICKSTART.md`  
+**Full Guide:** See `VERCEL_DEPLOY.md`  
+**Migration from Render:** See `RENDER_TO_VERCEL.md`
 
 ## Project Structure
 

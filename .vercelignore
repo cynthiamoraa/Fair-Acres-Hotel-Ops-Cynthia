@@ -1,0 +1,26 @@
+node_modules
+.git
+.env
+*.log
+.DS_Store
+
+# Documentation
+*.md
+!README.md
+
+# Development files
+start.js
+start.bat
+start.sh
+
+# Render-specific files
+.renderignore
+.env.render
+RENDER_*.md
+DEPLOY_RENDER.md
+DEPLOY_UNIFIED.md
+DEPLOYMENT_GUIDE.md
+
+# Local development
+Backend/db.json
+Backend/uploads/*
