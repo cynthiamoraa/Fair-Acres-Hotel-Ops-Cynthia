@@ -641,13 +641,7 @@ app.post("/api/reviews", async (req, res) => {
   }
 });
 
-// Serve Frontend for all non-API routes (SPA fallback)
-// Note: In Vercel, this is handled by vercel.json routing
-if (IS_PRODUCTION && process.env.VERCEL !== '1') {
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../Frontend/dist/index.html"));
-  });
-}
+// Note: SPA fallback is handled by vercel.json in production
 
 // Only start server if not in serverless environment (Vercel)
 if (process.env.VERCEL !== '1' && !module.parent) {
