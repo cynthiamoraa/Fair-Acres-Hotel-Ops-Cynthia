@@ -39,7 +39,7 @@ function csrfGuard(req, res, next) {
 }
 app.use(csrfGuard);
 
-const uploadsDir = path.join(__dirname, "uploads");
+const uploadsDir = IS_PRODUCTION ? "/tmp/uploads" : path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
 
