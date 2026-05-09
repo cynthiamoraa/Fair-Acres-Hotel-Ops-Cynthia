@@ -43,7 +43,9 @@ Choose one option:
    ```
    DATABASE_URL=<your-database-connection-string>
    NODE_ENV=production
+   VITE_API_URL=
    ```
+   Note: Leave `VITE_API_URL` empty (blank value) for same-origin API calls
 
 6. Click "Deploy"
 7. Wait for deployment to complete

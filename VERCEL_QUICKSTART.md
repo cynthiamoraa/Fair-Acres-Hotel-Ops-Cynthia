@@ -46,7 +46,10 @@ Set in Vercel Dashboard → Project Settings → Environment Variables:
 ```
 DATABASE_URL=postgresql://user:pass@host/db
 NODE_ENV=production
+VITE_API_URL=
 ```
+
+**Important:** Leave `VITE_API_URL` empty (blank value) so the frontend uses same-origin API calls.
 
 ## Project Structure
 
