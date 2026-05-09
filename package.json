@@ -1,0 +1,16 @@
+{
+  "name": "fair-acres-hms",
+  "version": "1.0.0",
+  "description": "Fair Acres Hotel Management System",
+  "private": true,
+  "scripts": {
+    "start": "node start.js",
+    "start:backend": "cd Backend && npm start",
+    "start:frontend": "cd Frontend && npm run dev",
+    "install:all": "npm install && cd Backend && npm install && cd ../Frontend && npm install",
+    "build:frontend": "cd Frontend && npm run build"
+  },
+  "keywords": ["hotel", "management", "housekeeping"],
+  "author": "",
+  "license": "ISC"
+}

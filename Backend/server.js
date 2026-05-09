@@ -9,6 +9,7 @@ const { USE_POSTGRES, pgOps, loadJsonDb, saveJsonDb } = require("./db");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
@@ -41,6 +42,13 @@ app.use(csrfGuard);
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
+
+// Serve Frontend static files in production
+if (IS_PRODUCTION) {
+  const frontendPath = path.join(__dirname, "../Frontend/dist");
+  app.use(express.static(frontendPath));
+  console.log(`✓ Serving frontend from ${frontendPath}`);
+}
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -632,6 +640,13 @@ app.post("/api/reviews", async (req, res) => {
     return res.status(201).json(review);
   }
 });
+
+// Serve Frontend for all non-API routes (SPA fallback)
+if (IS_PRODUCTION) {
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../Frontend/dist/index.html"));
+  });
+}
 
 const server = app.listen(PORT, () => {
   console.log(`Hotel Ops API running on http://localhost:${PORT}`);
