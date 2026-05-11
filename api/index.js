@@ -1,5 +1,5 @@
 // Import the Express app from Backend
-const app = require('../Backend/server');
+import app from '../Backend/server';
 
 // Export as Vercel serverless function
-module.exports = app;
+export default app;
