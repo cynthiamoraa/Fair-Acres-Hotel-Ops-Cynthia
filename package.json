@@ -1,20 +1,32 @@
 {
-  "name": "fair-acres-hms",
+  "name": "fair-acres-hotel-ops",
   "version": "1.0.0",
+  "main": "api/index.js",
   "engines": {
     "node": "24.x"
   },
   "description": "Fair Acres Hotel Management System",
   "private": true,
   "scripts": {
-    "start": "node start.js",
+    "start": "node Backend/server.js",
     "start:backend": "cd Backend && npm start",
     "start:frontend": "cd Frontend && npm run dev",
     "install:all": "npm install && cd Backend && npm install && cd ../Frontend && npm install",
     "build:frontend": "cd Frontend && npm run build",
     "vercel-build": "cd Frontend && npm install && npm run build"
   },
-  "keywords": ["hotel", "management", "housekeeping"],
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
+  },
+  "keywords": [
+    "hotel",
+    "management",
+    "housekeeping"
+  ],
   "author": "",
   "license": "ISC"
 }

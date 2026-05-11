@@ -17,15 +17,17 @@ const ALLOWED_ORIGINS = [
   process.env.CLIENT_ORIGIN,
 ].filter(Boolean);
 
-app.use(cors({
-  origin(origin, cb) {
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
-    cb(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "X-Requested-With"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      cb(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-Requested-With"],
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "50kb" }));
 
@@ -39,7 +41,9 @@ function csrfGuard(req, res, next) {
 }
 app.use(csrfGuard);
 
-const uploadsDir = IS_PRODUCTION ? "/tmp/uploads" : path.join(__dirname, "uploads");
+const uploadsDir = IS_PRODUCTION
+  ? "/tmp/uploads"
+  : path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
 
@@ -54,7 +58,8 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter(_, file, cb) {
-    if (!file.mimetype.startsWith("image/")) return cb(new Error("Only image files are allowed."));
+    if (!file.mimetype.startsWith("image/"))
+      return cb(new Error("Only image files are allowed."));
     cb(null, true);
   },
 });
@@ -81,15 +86,23 @@ if (!USE_POSTGRES) {
     seen.add(r.id);
     return true;
   });
-  db.tasks.filter((t) => t.proofImageHash).forEach((t) => {
-    usedImageHashes.add(t.proofImageHash);
-    hashToTaskId.set(t.proofImageHash, t.id);
-  });
+  db.tasks
+    .filter((t) => t.proofImageHash)
+    .forEach((t) => {
+      usedImageHashes.add(t.proofImageHash);
+      hashToTaskId.set(t.proofImageHash, t.id);
+    });
   roomIdSeq = db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1;
   taskIdSeq = db.tasks.length ? Math.max(...db.tasks.map((t) => t.id)) + 1 : 1;
-  issueIdSeq = db.issues.length ? Math.max(...db.issues.map((i) => i.id)) + 1 : 1;
-  reviewIdSeq = db.reviews.length ? Math.max(...db.reviews.map((r) => r.id)) + 1 : 1;
-  ticketSeq = db.issues.length ? Math.max(...db.issues.map((i) => i.ticketSeq || 0), 0) + 1 : 1;
+  issueIdSeq = db.issues.length
+    ? Math.max(...db.issues.map((i) => i.id)) + 1
+    : 1;
+  reviewIdSeq = db.reviews.length
+    ? Math.max(...db.reviews.map((r) => r.id)) + 1
+    : 1;
+  ticketSeq = db.issues.length
+    ? Math.max(...db.issues.map((i) => i.ticketSeq || 0), 0) + 1
+    : 1;
 }
 
 console.log(`✓ Using ${USE_POSTGRES ? "PostgreSQL" : "JSON"} database`);
@@ -100,7 +113,9 @@ const ALLOWED_IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 function saveBufferToUploads(file) {
   const rawExt = path.extname(file.originalname || "").toLowerCase();
   const ext = ALLOWED_IMAGE_EXTS.has(rawExt) ? rawExt : ".jpg";
-  const filename = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
+  const filename = `${Date.now()}-${crypto
+    .randomBytes(8)
+    .toString("hex")}${ext}`;
   const fullPath = path.join(uploadsDir, filename);
   if (!fullPath.startsWith(uploadsDir + path.sep) && fullPath !== uploadsDir) {
     throw new Error("Invalid file path.");
@@ -123,16 +138,22 @@ app.post("/api/auth/manager/login", async (req, res) => {
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: "Password required." });
   const manager = USE_POSTGRES ? await pgOps.getManager() : db.manager;
-  if (password !== manager.password) return res.status(401).json({ error: "Incorrect password." });
+  if (password !== manager.password)
+    return res.status(401).json({ error: "Incorrect password." });
   return res.json({ ok: true });
 });
 
 app.post("/api/auth/manager/change-password", async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword) return res.status(400).json({ error: "Both passwords required." });
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ error: "Both passwords required." });
   const manager = USE_POSTGRES ? await pgOps.getManager() : db.manager;
-  if (currentPassword !== manager.password) return res.status(401).json({ error: "Incorrect current password." });
-  if (newPassword.length < 6) return res.status(400).json({ error: "New password must be at least 6 characters." });
+  if (currentPassword !== manager.password)
+    return res.status(401).json({ error: "Incorrect current password." });
+  if (newPassword.length < 6)
+    return res
+      .status(400)
+      .json({ error: "New password must be at least 6 characters." });
   if (USE_POSTGRES) {
     await pgOps.updateManager(newPassword);
   } else {
@@ -147,7 +168,8 @@ app.post("/api/auth/worker/login", async (req, res) => {
   const workers = USE_POSTGRES ? await pgOps.getWorkers() : db.workers;
   const worker = workers.find((w) => w.id === workerId);
   if (!worker) return res.status(404).json({ error: "Worker not found." });
-  if (worker.pin !== String(pin)) return res.status(401).json({ error: "Incorrect PIN." });
+  if (worker.pin !== String(pin))
+    return res.status(401).json({ error: "Incorrect PIN." });
   return res.json({ ok: true, worker: { id: worker.id, name: worker.name } });
 });
 
@@ -185,7 +207,8 @@ app.get("/api/workers", async (_, res) => {
 app.post("/api/workers", async (req, res) => {
   const { name, pin } = req.body;
   if (!name) return res.status(400).json({ error: "name is required." });
-  if (!pin || String(pin).length < 4) return res.status(400).json({ error: "PIN must be at least 4 digits." });
+  if (!pin || String(pin).length < 4)
+    return res.status(400).json({ error: "PIN must be at least 4 digits." });
   const id = `w${Date.now()}`;
   const worker = { id, name, pin: String(pin) };
   if (USE_POSTGRES) {
@@ -199,9 +222,12 @@ app.post("/api/workers", async (req, res) => {
 
 app.patch("/api/workers/:id/pin", async (req, res) => {
   const { pin } = req.body;
-  if (!pin || String(pin).length < 4) return res.status(400).json({ error: "PIN must be at least 4 digits." });
+  if (!pin || String(pin).length < 4)
+    return res.status(400).json({ error: "PIN must be at least 4 digits." });
   if (USE_POSTGRES) {
-    const worker = await pgOps.updateWorker(req.params.id, { pin: String(pin) });
+    const worker = await pgOps.updateWorker(req.params.id, {
+      pin: String(pin),
+    });
     if (!worker) return res.status(404).json({ error: "Worker not found." });
   } else {
     const worker = db.workers.find((w) => w.id === req.params.id);
@@ -250,12 +276,17 @@ app.get("/api/rooms", async (_, res) => {
 app.post("/api/rooms/bulk", async (req, res) => {
   const { prefix, floor, from, to, status = "available" } = req.body;
   if (!prefix || !floor || from == null || to == null)
-    return res.status(400).json({ error: "prefix, floor, from, and to are required." });
-  if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid status." });
+    return res
+      .status(400)
+      .json({ error: "prefix, floor, from, and to are required." });
+  if (!statusAllowed.has(status))
+    return res.status(400).json({ error: "Invalid status." });
   const start = Number(from);
   const end = Number(to);
   if (isNaN(start) || isNaN(end) || start > end || end - start > 199)
-    return res.status(400).json({ error: "Invalid range. Max 200 rooms at once." });
+    return res
+      .status(400)
+      .json({ error: "Invalid range. Max 200 rooms at once." });
 
   const rooms = USE_POSTGRES ? await pgOps.getRooms() : db.rooms;
   const existingCodes = new Set(rooms.map((r) => r.code.toLowerCase()));
@@ -265,7 +296,10 @@ app.post("/api/rooms/bulk", async (req, res) => {
 
   for (let n = start; n <= end; n++) {
     const code = `${prefix}${n}`;
-    if (existingCodes.has(code.toLowerCase())) { skipped.push(code); continue; }
+    if (existingCodes.has(code.toLowerCase())) {
+      skipped.push(code);
+      continue;
+    }
     const room = { code, floor: floorNum, status };
     if (USE_POSTGRES) {
       await pgOps.createRoom(room);
@@ -278,16 +312,24 @@ app.post("/api/rooms/bulk", async (req, res) => {
   }
 
   if (!USE_POSTGRES && created.length) saveJsonDb(db);
-  return res.status(201).json({ created: created.length, skipped: skipped.length, skippedCodes: skipped });
+  return res
+    .status(201)
+    .json({
+      created: created.length,
+      skipped: skipped.length,
+      skippedCodes: skipped,
+    });
 });
 
 app.post("/api/rooms", async (req, res) => {
   const { code, floor, status = "available" } = req.body;
-  if (!code || !floor) return res.status(400).json({ error: "code and floor are required." });
+  if (!code || !floor)
+    return res.status(400).json({ error: "code and floor are required." });
   const rooms = USE_POSTGRES ? await pgOps.getRooms() : db.rooms;
   if (rooms.find((r) => r.code.toLowerCase() === code.toLowerCase()))
     return res.status(409).json({ error: "Room code already exists." });
-  if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid status." });
+  if (!statusAllowed.has(status))
+    return res.status(400).json({ error: "Invalid status." });
   const room = { code, floor: Number(floor), status };
   if (USE_POSTGRES) {
     const created = await pgOps.createRoom(room);
@@ -302,7 +344,8 @@ app.post("/api/rooms", async (req, res) => {
 
 app.patch("/api/rooms/:id/status", async (req, res) => {
   const { status } = req.body;
-  if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid room status." });
+  if (!statusAllowed.has(status))
+    return res.status(400).json({ error: "Invalid room status." });
   if (USE_POSTGRES) {
     const room = await pgOps.updateRoom(Number(req.params.id), { status });
     if (!room) return res.status(404).json({ error: "Room not found." });
@@ -319,7 +362,9 @@ app.patch("/api/rooms/:id/status", async (req, res) => {
 // Tasks
 app.get("/api/tasks", async (req, res) => {
   const { workerId, status } = req.query;
-  let tasks = USE_POSTGRES ? await pgOps.getTasks({ workerId, status }) : db.tasks;
+  let tasks = USE_POSTGRES
+    ? await pgOps.getTasks({ workerId, status })
+    : db.tasks;
   if (!USE_POSTGRES) {
     if (workerId) tasks = tasks.filter((t) => t.workerId === workerId);
     if (status) tasks = tasks.filter((t) => t.status === status);
@@ -333,7 +378,7 @@ app.patch("/api/tasks/:id/assign", async (req, res) => {
   const workers = USE_POSTGRES ? await pgOps.getWorkers() : db.workers;
   const worker = workers.find((w) => w.id === workerId);
   if (!worker) return res.status(400).json({ error: "Worker not found." });
-  
+
   if (USE_POSTGRES) {
     const task = await pgOps.updateTask(Number(req.params.id), {
       worker_id: workerId,
@@ -355,11 +400,17 @@ app.patch("/api/tasks/:id/assign", async (req, res) => {
 
 app.post("/api/tasks", async (req, res) => {
   const { roomCode, title, notes = "", workerId } = req.body;
-  if (!roomCode || !title) return res.status(400).json({ error: "roomCode and title are required." });
+  if (!roomCode || !title)
+    return res.status(400).json({ error: "roomCode and title are required." });
 
   const rooms = USE_POSTGRES ? await pgOps.getRooms() : db.rooms;
-  const room = rooms.find((r) => r.code.toLowerCase() === roomCode.toLowerCase());
-  if (!room) return res.status(400).json({ error: `Room "${roomCode}" does not exist.` });
+  const room = rooms.find(
+    (r) => r.code.toLowerCase() === roomCode.toLowerCase()
+  );
+  if (!room)
+    return res
+      .status(400)
+      .json({ error: `Room "${roomCode}" does not exist.` });
 
   if (workerId) {
     const workers = USE_POSTGRES ? await pgOps.getWorkers() : db.workers;
@@ -400,77 +451,91 @@ app.post("/api/tasks", async (req, res) => {
   }
 });
 
-app.post("/api/tasks/:id/complete", upload.single("image"), multerError, async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "Image proof is required." });
+app.post(
+  "/api/tasks/:id/complete",
+  upload.single("image"),
+  multerError,
+  async (req, res) => {
+    if (!req.file)
+      return res.status(400).json({ error: "Image proof is required." });
 
-  const hash = sha256(req.file.buffer);
-  if (usedImageHashes.has(hash)) {
-    const existingTaskId = hashToTaskId.get(hash);
-    if (existingTaskId !== Number(req.params.id)) 
-      return res.status(409).json({ error: "Duplicate image detected. Please take a new photo." });
-  }
-
-  const imageUrl = saveBufferToUploads(req.file);
-  
-  if (USE_POSTGRES) {
-    const tasks = await pgOps.getTasks();
-    const task = tasks.find((t) => t.id === Number(req.params.id));
-    if (!task) return res.status(404).json({ error: "Task not found." });
-    if (task.status === "completed") return res.status(400).json({ error: "Task already completed." });
-
-    const updated = await pgOps.updateTask(task.id, {
-      proof_image_url: imageUrl,
-      status: "completed",
-      completed_at: new Date().toISOString(),
-      proof_image_hash: hash,
-    });
-
-    if (task.issue_id) {
-      const issues = await pgOps.getIssues();
-      const issue = issues.find((i) => i.id === task.issue_id);
-      if (issue && issue.status === "open") {
-        await pgOps.updateIssue(issue.id, { status: "resolved" });
-      }
+    const hash = sha256(req.file.buffer);
+    if (usedImageHashes.has(hash)) {
+      const existingTaskId = hashToTaskId.get(hash);
+      if (existingTaskId !== Number(req.params.id))
+        return res
+          .status(409)
+          .json({
+            error: "Duplicate image detected. Please take a new photo.",
+          });
     }
 
-    usedImageHashes.add(hash);
-    hashToTaskId.set(hash, task.id);
-    return res.json(updated);
-  } else {
-    const task = db.tasks.find((t) => t.id === Number(req.params.id));
-    if (!task) return res.status(404).json({ error: "Task not found." });
-    if (task.status === "completed") return res.status(400).json({ error: "Task already completed." });
+    const imageUrl = saveBufferToUploads(req.file);
 
-    task.proofImageUrl = imageUrl;
-    task.status = "completed";
-    task.completedAt = new Date().toISOString();
-    task.proofImageHash = hash;
+    if (USE_POSTGRES) {
+      const tasks = await pgOps.getTasks();
+      const task = tasks.find((t) => t.id === Number(req.params.id));
+      if (!task) return res.status(404).json({ error: "Task not found." });
+      if (task.status === "completed")
+        return res.status(400).json({ error: "Task already completed." });
 
-    usedImageHashes.add(hash);
-    hashToTaskId.set(hash, task.id);
+      const updated = await pgOps.updateTask(task.id, {
+        proof_image_url: imageUrl,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        proof_image_hash: hash,
+      });
 
-    if (task.issueId) {
-      const issue = db.issues.find((i) => i.id === task.issueId);
-      if (issue && issue.status === "open") {
-        issue.status = "resolved";
-        issue.resolvedAt = new Date().toISOString();
-        
-        // Remove room from maintenance when issue is resolved
-        const room = db.rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
-        if (room && room.status === "maintenance") {
-          room.status = "available";
+      if (task.issue_id) {
+        const issues = await pgOps.getIssues();
+        const issue = issues.find((i) => i.id === task.issue_id);
+        if (issue && issue.status === "open") {
+          await pgOps.updateIssue(issue.id, { status: "resolved" });
         }
       }
-    }
 
-    saveJsonDb(db);
-    return res.json(task);
+      usedImageHashes.add(hash);
+      hashToTaskId.set(hash, task.id);
+      return res.json(updated);
+    } else {
+      const task = db.tasks.find((t) => t.id === Number(req.params.id));
+      if (!task) return res.status(404).json({ error: "Task not found." });
+      if (task.status === "completed")
+        return res.status(400).json({ error: "Task already completed." });
+
+      task.proofImageUrl = imageUrl;
+      task.status = "completed";
+      task.completedAt = new Date().toISOString();
+      task.proofImageHash = hash;
+
+      usedImageHashes.add(hash);
+      hashToTaskId.set(hash, task.id);
+
+      if (task.issueId) {
+        const issue = db.issues.find((i) => i.id === task.issueId);
+        if (issue && issue.status === "open") {
+          issue.status = "resolved";
+          issue.resolvedAt = new Date().toISOString();
+
+          // Remove room from maintenance when issue is resolved
+          const room = db.rooms.find(
+            (r) => r.code.toLowerCase() === issue.location.toLowerCase()
+          );
+          if (room && room.status === "maintenance") {
+            room.status = "available";
+          }
+        }
+      }
+
+      saveJsonDb(db);
+      return res.json(task);
+    }
   }
-});
+);
 
 // Issues
 app.get("/api/issues/ticket/:ticketNo", async (req, res) => {
-  const issue = USE_POSTGRES 
+  const issue = USE_POSTGRES
     ? await pgOps.getIssueByTicket(req.params.ticketNo.toUpperCase())
     : db.issues.find((i) => i.ticketNo === req.params.ticketNo.toUpperCase());
   if (!issue) return res.status(404).json({ error: "Ticket not found." });
@@ -485,7 +550,9 @@ app.get("/api/issues/ticket/:ticketNo", async (req, res) => {
 });
 
 app.get("/api/issues", async (_, res) => {
-  const issues = USE_POSTGRES ? await pgOps.getIssues() : db.issues.sort((a, b) => b.id - a.id);
+  const issues = USE_POSTGRES
+    ? await pgOps.getIssues()
+    : db.issues.sort((a, b) => b.id - a.id);
   res.json(issues);
 });
 
@@ -494,131 +561,160 @@ app.patch("/api/issues/:id/resolve", async (req, res) => {
     const issues = await pgOps.getIssues();
     const issue = issues.find((i) => i.id === Number(req.params.id));
     if (!issue) return res.status(404).json({ error: "Issue not found." });
-    
+
     await pgOps.updateIssue(Number(req.params.id), {
       status: "resolved",
       resolved_at: new Date().toISOString(),
     });
-    
+
     // Remove room from maintenance
     const rooms = await pgOps.getRooms();
-    const room = rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
+    const room = rooms.find(
+      (r) => r.code.toLowerCase() === issue.location.toLowerCase()
+    );
     if (room && room.status === "maintenance") {
       await pgOps.updateRoom(room.id, { status: "available" });
     }
-    
+
     return res.json(issue);
   } else {
     const issue = db.issues.find((i) => i.id === Number(req.params.id));
     if (!issue) return res.status(404).json({ error: "Issue not found." });
     issue.status = "resolved";
     issue.resolvedAt = new Date().toISOString();
-    
+
     // Remove room from maintenance
-    const room = db.rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
+    const room = db.rooms.find(
+      (r) => r.code.toLowerCase() === issue.location.toLowerCase()
+    );
     if (room && room.status === "maintenance") {
       room.status = "available";
     }
-    
+
     saveJsonDb(db);
     return res.json(issue);
   }
 });
 
-app.post("/api/issues", upload.single("image"), multerError, async (req, res) => {
-  const { location, description = "" } = req.body;
-  if (!location) return res.status(400).json({ error: "location is required." });
-  if (!description && !req.file) return res.status(400).json({ error: "Provide a description or an image." });
+app.post(
+  "/api/issues",
+  upload.single("image"),
+  multerError,
+  async (req, res) => {
+    const { location, description = "" } = req.body;
+    if (!location)
+      return res.status(400).json({ error: "location is required." });
+    if (!description && !req.file)
+      return res
+        .status(400)
+        .json({ error: "Provide a description or an image." });
 
-  const imageUrl = req.file ? saveBufferToUploads(req.file) : null;
-  
-  if (USE_POSTGRES) {
-    const issues = await pgOps.getIssues();
-    const maxSeq = issues.length ? Math.max(...issues.map((i) => i.ticket_seq || 0)) : 0;
-    const ticketNo = `TKT-${String(maxSeq + 1).padStart(4, "0")}`;
-    
-    const issue = await pgOps.createIssue({
-      ticket_no: ticketNo,
-      ticket_seq: maxSeq + 1,
-      location,
-      description,
-      image_url: imageUrl,
-      status: "open",
-      created_at: new Date().toISOString(),
-      resolved_at: null,
-    });
+    const imageUrl = req.file ? saveBufferToUploads(req.file) : null;
 
-    const rooms = await pgOps.getRooms();
-    const room = rooms.find((r) => r.code.toLowerCase() === location.toLowerCase());
-    if (room && room.status !== "maintenance") {
-      await pgOps.updateRoom(room.id, { status: "maintenance" });
+    if (USE_POSTGRES) {
+      const issues = await pgOps.getIssues();
+      const maxSeq = issues.length
+        ? Math.max(...issues.map((i) => i.ticket_seq || 0))
+        : 0;
+      const ticketNo = `TKT-${String(maxSeq + 1).padStart(4, "0")}`;
+
+      const issue = await pgOps.createIssue({
+        ticket_no: ticketNo,
+        ticket_seq: maxSeq + 1,
+        location,
+        description,
+        image_url: imageUrl,
+        status: "open",
+        created_at: new Date().toISOString(),
+        resolved_at: null,
+      });
+
+      const rooms = await pgOps.getRooms();
+      const room = rooms.find(
+        (r) => r.code.toLowerCase() === location.toLowerCase()
+      );
+      if (room && room.status !== "maintenance") {
+        await pgOps.updateRoom(room.id, { status: "maintenance" });
+      }
+
+      const task = await pgOps.createTask({
+        room_code: location,
+        title: `Fix complaint: ${
+          description ? description.slice(0, 60) : "Guest complaint"
+        }`,
+        notes: description,
+        status: "unassigned",
+        worker_id: null,
+        created_at: new Date().toISOString(),
+        assigned_at: null,
+        completed_at: null,
+        proof_image_url: null,
+        proof_image_hash: null,
+        issue_id: issue.id,
+      });
+
+      return res.status(201).json(issue);
+    } else {
+      const ticketNo = `TKT-${String(ticketSeq++).padStart(4, "0")}`;
+      const issue = {
+        id: issueIdSeq++,
+        ticketNo,
+        ticketSeq: ticketSeq - 1,
+        location,
+        description,
+        imageUrl,
+        status: "open",
+        createdAt: new Date().toISOString(),
+        resolvedAt: null,
+      };
+      db.issues.push(issue);
+
+      const room = db.rooms.find(
+        (r) => r.code.toLowerCase() === location.toLowerCase()
+      );
+      if (room && room.status !== "maintenance") room.status = "maintenance";
+
+      const task = {
+        id: taskIdSeq++,
+        roomCode: location,
+        title: `Fix complaint: ${
+          description ? description.slice(0, 60) : "Guest complaint"
+        }`,
+        notes: description,
+        status: "unassigned",
+        workerId: null,
+        createdAt: new Date().toISOString(),
+        assignedAt: null,
+        completedAt: null,
+        proofImageUrl: null,
+        proofImageHash: null,
+        issueId: issue.id,
+      };
+      db.tasks.push(task);
+
+      saveJsonDb(db);
+      return res.status(201).json(issue);
     }
-
-    const task = await pgOps.createTask({
-      room_code: location,
-      title: `Fix complaint: ${description ? description.slice(0, 60) : "Guest complaint"}`,
-      notes: description,
-      status: "unassigned",
-      worker_id: null,
-      created_at: new Date().toISOString(),
-      assigned_at: null,
-      completed_at: null,
-      proof_image_url: null,
-      proof_image_hash: null,
-      issue_id: issue.id,
-    });
-
-    return res.status(201).json(issue);
-  } else {
-    const ticketNo = `TKT-${String(ticketSeq++).padStart(4, "0")}`;
-    const issue = {
-      id: issueIdSeq++,
-      ticketNo,
-      ticketSeq: ticketSeq - 1,
-      location,
-      description,
-      imageUrl,
-      status: "open",
-      createdAt: new Date().toISOString(),
-      resolvedAt: null,
-    };
-    db.issues.push(issue);
-
-    const room = db.rooms.find((r) => r.code.toLowerCase() === location.toLowerCase());
-    if (room && room.status !== "maintenance") room.status = "maintenance";
-
-    const task = {
-      id: taskIdSeq++,
-      roomCode: location,
-      title: `Fix complaint: ${description ? description.slice(0, 60) : "Guest complaint"}`,
-      notes: description,
-      status: "unassigned",
-      workerId: null,
-      createdAt: new Date().toISOString(),
-      assignedAt: null,
-      completedAt: null,
-      proofImageUrl: null,
-      proofImageHash: null,
-      issueId: issue.id,
-    };
-    db.tasks.push(task);
-
-    saveJsonDb(db);
-    return res.status(201).json(issue);
   }
-});
+);
 
 // Reviews
 app.get("/api/reviews", async (_, res) => {
-  const reviews = USE_POSTGRES ? await pgOps.getReviews() : db.reviews.sort((a, b) => b.id - a.id);
+  const reviews = USE_POSTGRES
+    ? await pgOps.getReviews()
+    : db.reviews.sort((a, b) => b.id - a.id);
   res.json(reviews);
 });
 
 app.post("/api/reviews", async (req, res) => {
   const { guestName = "Anonymous", roomCode, rating, comment } = req.body;
-  if (!roomCode || !rating || !comment) return res.status(400).json({ error: "roomCode, rating, and comment are required." });
-  if (rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be between 1 and 5." });
-  
+  if (!roomCode || !rating || !comment)
+    return res
+      .status(400)
+      .json({ error: "roomCode, rating, and comment are required." });
+  if (rating < 1 || rating > 5)
+    return res.status(400).json({ error: "Rating must be between 1 and 5." });
+
   const review = {
     guest_name: guestName,
     room_code: roomCode,
@@ -644,41 +740,43 @@ app.post("/api/reviews", async (req, res) => {
 // Note: SPA fallback is handled by vercel.json in production
 
 // Only start server if not in serverless environment (Vercel)
-if (process.env.VERCEL !== '1' && !module.parent) {
+if (process.env.VERCEL !== "1" && !module.parent) {
   const server = app.listen(PORT, () => {
     console.log(`Hotel Ops API running on http://localhost:${PORT}`);
     console.log("✓ Server is ready and listening for requests");
     console.log("Press Ctrl+C to stop the server");
   });
 
-  server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`Port ${PORT} is already in use. Trying port ${PORT + 1}...`);
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(
+        `Port ${PORT} is already in use. Trying port ${PORT + 1}...`
+      );
       const altServer = app.listen(PORT + 1, () => {
         console.log(`Hotel Ops API running on http://localhost:${PORT + 1}`);
         console.log("✓ Server is ready and listening for requests");
         console.log("Press Ctrl+C to stop the server");
       });
-      altServer.on('error', (altErr) => {
-        console.error('Failed to start server:', altErr.message);
+      altServer.on("error", (altErr) => {
+        console.error("Failed to start server:", altErr.message);
         process.exit(1);
       });
     } else {
-      console.error('Server error:', err);
+      console.error("Server error:", err);
       process.exit(1);
     }
   });
 
-  process.on('uncaughtException', (err) => {
-    console.error('Uncaught Exception:', err);
+  process.on("uncaughtException", (err) => {
+    console.error("Uncaught Exception:", err);
   });
 
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("Unhandled Rejection at:", promise, "reason:", reason);
   });
 
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received, closing server gracefully...');
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM received, closing server gracefully...");
     if (server && server.close) {
       server.close(() => process.exit(0));
     } else {
@@ -686,8 +784,8 @@ if (process.env.VERCEL !== '1' && !module.parent) {
     }
   });
 
-  process.on('SIGINT', () => {
-    console.log('\nSIGINT received, closing server gracefully...');
+  process.on("SIGINT", () => {
+    console.log("\nSIGINT received, closing server gracefully...");
     if (server && server.close) {
       server.close(() => process.exit(0));
     } else {
