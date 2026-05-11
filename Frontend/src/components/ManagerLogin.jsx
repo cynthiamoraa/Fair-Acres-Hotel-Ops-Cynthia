@@ -25,7 +25,10 @@ export default function ManagerLogin({ onLogin }) {
     } catch (err) {
       setLoading(false);
       setError("Cannot connect to server. Please check your connection.");
-      console.error("Login error:", err);
+      console.error(error);
+      res.status(500).json({
+        message: error.message,
+      });
     }
   }
 

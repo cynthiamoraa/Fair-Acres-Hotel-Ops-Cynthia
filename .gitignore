@@ -9,6 +9,7 @@ package-lock.json
 .env.production
 .env.render
 
+
 # Database
 Backend/db.json
 Backend/uploads/
