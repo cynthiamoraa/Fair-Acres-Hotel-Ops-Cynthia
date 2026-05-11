@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const USE_POSTGRES = !!process.env.DATABASE_URL;
+let USE_POSTGRES = !!process.env.DATABASE_URL;
 let sql = null;
 
 // Only load PostgreSQL driver if DATABASE_URL is set

@@ -2,6 +2,11 @@
   "version": 2,
   "buildCommand": "cd Frontend && npm install && npm run build",
   "outputDirectory": "Frontend/dist",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
     { "source": "/uploads/(.*)", "destination": "/api/index.js" },
