@@ -2,7 +2,7 @@
   "name": "fair-acres-hms",
   "version": "1.0.0",
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "description": "Fair Acres Hotel Management System",
   "private": true,

@@ -1,9 +1,14 @@
-// In production (Vercel), use relative API path. In development, use localhost.
 const IS_PRODUCTION = import.meta.env.PROD;
-export const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined 
-  ? import.meta.env.VITE_API_URL 
-  : (IS_PRODUCTION ? "" : "http://localhost:8000");
-export const API_URL = `${API_BASE_URL}/api`;
+
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL !== undefined
+    ? import.meta.env.VITE_API_URL
+    : IS_PRODUCTION
+    ? "/api"
+    : "http://localhost:8000";
+
+export const API_URL = API_BASE_URL;
+
 
 const CSRF_HEADERS = {
   "Content-Type": "application/json",
