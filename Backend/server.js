@@ -20,7 +20,12 @@ const ALLOWED_ORIGINS = [
 app.use(
   cors({
     origin(origin, cb) {
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      // Allow same-origin requests (no origin header) and serverless internal calls
+      if (!origin) return cb(null, true);
+      // Allow explicitly listed origins
+      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      // Allow any vercel.app subdomain (covers preview deployments too)
+      if (origin.endsWith(".vercel.app")) return cb(null, true);
       cb(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
