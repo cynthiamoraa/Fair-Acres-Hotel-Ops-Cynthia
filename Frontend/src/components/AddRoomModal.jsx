@@ -50,7 +50,13 @@ export default function AddRoomModal({ onClose, onAdded }) {
       to: Number(bulk.to),
       status: bulk.status,
     });
-    const data = await res.json();
+    let data = {};
+
+    try {
+      data = await res.json();
+    } catch (err) {
+      console.error("Invalid JSON response");
+    }
     setLoading(false);
     if (!res.ok) return setError(data.error || "Failed to create rooms.");
     setResult(data);

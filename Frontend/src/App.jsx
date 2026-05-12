@@ -70,7 +70,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] text-slate-950 flex">
-      <Sidebar activeView={view} onChangeView={setView} onLogout={handleLogout} />
+      <Sidebar
+        activeView={view}
+        onChangeView={setView}
+        onLogout={handleLogout}
+      />
 
       <main className="flex-1 min-w-0 p-4 md:p-6 xl:p-8">
         <MobileNav activeView={view} onChangeView={setView} />
@@ -83,6 +87,9 @@ export default function App() {
             issues={issues}
             reviews={reviews}
             tasks={tasks}
+            newTask={newTask}
+            onNewTaskChange={setNewTask}
+            onCreateTask={createTask}
             onRoomsChange={loadAll}
           />
         )}
@@ -99,8 +106,12 @@ export default function App() {
         )}
 
         {view === "calendar" && <CalendarPage tasks={tasks} />}
-        {view === "notifications" && <NotificationsPage issues={issues} tasks={tasks} />}
-        {view === "settings" && <SettingsPage workers={workers} onWorkersChange={loadAll} />}
+        {view === "notifications" && (
+          <NotificationsPage issues={issues} tasks={tasks} />
+        )}
+        {view === "settings" && (
+          <SettingsPage workers={workers} onWorkersChange={loadAll} />
+        )}
       </main>
     </div>
   );
