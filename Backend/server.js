@@ -16,7 +16,6 @@ const ALLOWED_ORIGINS = [
 
 app.use(cors({
   origin(origin, cb) {
-    // Allow requests with no origin (mobile apps, curl) only in dev
     if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
     cb(new Error("Not allowed by CORS"));
   },
@@ -25,10 +24,8 @@ app.use(cors({
   credentials: true,
 }));
 
-// Limit JSON body size to 50 KB
 app.use(express.json({ limit: "50kb" }));
 
-// CSRF guard — all state-changing requests from the browser must include this header
 function csrfGuard(req, res, next) {
   if (["POST", "PATCH", "DELETE"].includes(req.method)) {
     if (!req.headers["x-requested-with"]) {
@@ -39,21 +36,19 @@ function csrfGuard(req, res, next) {
 }
 app.use(csrfGuard);
 
-// ── Uploads ──────────────────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 app.use("/uploads", express.static(uploadsDir));
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter(_, file, cb) {
     if (!file.mimetype.startsWith("image/")) return cb(new Error("Only image files are allowed."));
     cb(null, true);
   },
 });
 
-// ── JSON persistence ──────────────────────────────────────────────────────────
 const DB_PATH = path.join(__dirname, "db.json");
 
 const DEFAULT_DB = {
@@ -64,6 +59,7 @@ const DEFAULT_DB = {
   tasks: [],
   issues: [],
   reviews: [],
+  tickets: [],
 };
 
 function loadDb() {
@@ -84,32 +80,47 @@ function saveDb() {
 
 const db = loadDb();
 
-// Ensure manager key exists for older db.json files
 if (!db.manager) db.manager = { password: "admin1234" };
 if (!db.settings) db.settings = { hotelName: "", contactEmail: "" };
 if (!db.reviews) db.reviews = [];
+if (!db.tickets) db.tickets = [];
 
-// Rebuild in-memory duplicate hash sets from persisted tasks
+(function dedupeRooms() {
+  const seen = new Set();
+  let changed = false;
+  db.rooms = db.rooms.filter((r) => {
+    if (seen.has(r.id)) { changed = true; return false; }
+    seen.add(r.id);
+    return true;
+  });
+  if (changed) saveDb();
+})();
+
 const usedImageHashes = new Set(db.tasks.filter((t) => t.proofImageHash).map((t) => t.proofImageHash));
 const hashToTaskId = new Map(db.tasks.filter((t) => t.proofImageHash).map((t) => [t.proofImageHash, t.id]));
 
-// Sequence counters derived from persisted data
+let roomIdSeq = db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1;
 let taskIdSeq = db.tasks.length ? Math.max(...db.tasks.map((t) => t.id)) + 1 : 1;
 let issueIdSeq = db.issues.length ? Math.max(...db.issues.map((i) => i.id)) + 1 : 1;
 let reviewIdSeq = db.reviews.length ? Math.max(...db.reviews.map((r) => r.id)) + 1 : 1;
 
 const statusAllowed = new Set(["available", "occupied", "maintenance"]);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// In-memory DND status map, seeded from existing rooms
+let roomDndStatuses = {};
+db.rooms.forEach((r) => {
+  if (!roomDndStatuses[r.code]) {
+    roomDndStatuses[r.code] = { status: r.status, dndUntil: null };
+  }
+});
+
 const ALLOWED_IMAGE_EXTS = new Set([".jpg", ".jpeg", ".png", ".gif", ".webp"]);
 
 function saveBufferToUploads(file) {
   const rawExt = path.extname(file.originalname || "").toLowerCase();
   const ext = ALLOWED_IMAGE_EXTS.has(rawExt) ? rawExt : ".jpg";
-  // Use only a generated name — never trust the original filename
   const filename = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}${ext}`;
   const fullPath = path.join(uploadsDir, filename);
-  // Ensure the resolved path stays inside uploadsDir (path traversal guard)
   if (!fullPath.startsWith(uploadsDir + path.sep) && fullPath !== uploadsDir) {
     throw new Error("Invalid file path.");
   }
@@ -225,26 +236,19 @@ app.post("/api/rooms/bulk", (req, res) => {
   if (isNaN(start) || isNaN(end) || start > end || end - start > 199)
     return res.status(400).json({ error: "Invalid range. Max 200 rooms at once." });
 
-  // Build a Set of existing codes for O(1) duplicate lookup
   const existingCodes = new Set(db.rooms.map((r) => r.code.toLowerCase()));
-
-  // Compute starting ID once outside the loop
-  let nextId = db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1;
   const floorNum = Number(floor);
-
   const created = [];
   const skipped = [];
 
   for (let n = start; n <= end; n++) {
     const code = `${prefix}${n}`;
-    if (existingCodes.has(code.toLowerCase())) {
-      skipped.push(code);
-      continue;
-    }
-    const room = { id: nextId++, code, floor: floorNum, status };
+    if (existingCodes.has(code.toLowerCase())) { skipped.push(code); continue; }
+    const room = { id: roomIdSeq++, code, floor: floorNum, status };
     db.rooms.push(room);
     existingCodes.add(code.toLowerCase());
     created.push(room);
+    if (!roomDndStatuses[code]) roomDndStatuses[code] = { status, dndUntil: null };
   }
 
   if (created.length) saveDb();
@@ -257,8 +261,9 @@ app.post("/api/rooms", (req, res) => {
   if (db.rooms.find((r) => r.code.toLowerCase() === code.toLowerCase()))
     return res.status(409).json({ error: "Room code already exists." });
   if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid status." });
-  const room = { id: db.rooms.length ? Math.max(...db.rooms.map((r) => r.id)) + 1 : 1, code, floor: Number(floor), status };
+  const room = { id: roomIdSeq++, code, floor: Number(floor), status };
   db.rooms.push(room);
+  if (!roomDndStatuses[code]) roomDndStatuses[code] = { status, dndUntil: null };
   saveDb();
   return res.status(201).json(room);
 });
@@ -269,6 +274,7 @@ app.patch("/api/rooms/:id/status", (req, res) => {
   const { status } = req.body;
   if (!statusAllowed.has(status)) return res.status(400).json({ error: "Invalid room status." });
   room.status = status;
+  if (roomDndStatuses[room.code]) roomDndStatuses[room.code].status = status;
   saveDb();
   return res.json(room);
 });
@@ -282,7 +288,6 @@ app.get("/api/tasks", (req, res) => {
   res.json(tasks.sort((a, b) => b.id - a.id));
 });
 
-// Assign an unassigned task to a worker
 app.patch("/api/tasks/:id/assign", (req, res) => {
   const task = db.tasks.find((t) => t.id === Number(req.params.id));
   if (!task) return res.status(404).json({ error: "Task not found." });
@@ -300,11 +305,9 @@ app.post("/api/tasks", (req, res) => {
   const { roomCode, title, notes = "", workerId } = req.body;
   if (!roomCode || !title) return res.status(400).json({ error: "roomCode and title are required." });
 
-  // Validate room exists
   const room = db.rooms.find((r) => r.code.toLowerCase() === roomCode.toLowerCase());
   if (!room) return res.status(400).json({ error: `Room "${roomCode}" does not exist.` });
 
-  // workerId is optional — if omitted task is unassigned
   if (workerId) {
     const worker = db.workers.find((w) => w.id === workerId);
     if (!worker) return res.status(400).json({ error: "Worker not found." });
@@ -349,7 +352,6 @@ app.post("/api/tasks/:id/complete", upload.single("image"), multerError, (req, r
   usedImageHashes.add(hash);
   hashToTaskId.set(hash, task.id);
 
-  // If linked to an issue, auto-resolve it
   if (task.issueId) {
     const issue = db.issues.find((i) => i.id === task.issueId);
     if (issue && issue.status === "open") issue.status = "resolved";
@@ -386,11 +388,9 @@ app.post("/api/issues", upload.single("image"), multerError, (req, res) => {
   };
   db.issues.push(issue);
 
-  // Set room to maintenance
   const room = db.rooms.find((r) => r.code.toLowerCase() === location.toLowerCase());
   if (room && room.status !== "maintenance") room.status = "maintenance";
 
-  // Auto-create an unassigned task linked to this issue
   const task = {
     id: taskIdSeq++,
     roomCode: location,
@@ -423,5 +423,127 @@ app.post("/api/reviews", (req, res) => {
   saveDb();
   return res.status(201).json(review);
 });
+
+// ── Tickets ───────────────────────────────────────────────────────────────────
+app.get("/api/tickets", (req, res) => {
+  res.json(db.tickets);
+});
+
+app.get("/api/tickets/:id", (req, res) => {
+  const ticket = db.tickets.find((t) => t.id === req.params.id);
+  if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+  res.json(ticket);
+});
+
+app.post("/api/tickets", (req, res) => {
+  const { room, title, category, priority, description, photo, submittedBy } = req.body;
+
+  const newTicket = {
+    id: `TK-${String(db.tickets.length + 1).padStart(3, "0")}`,
+    room,
+    title,
+    category,
+    priority: priority || "normal",
+    status: "open",
+    submittedAt: new Date(),
+    submittedBy: submittedBy || "guest",
+    description,
+    photo,
+    assignedTo: null,
+    resolvedAt: null,
+  };
+
+  db.tickets.push(newTicket);
+
+  if (priority === "urgent") {
+    console.log(`URGENT ALERT: ${title} in Room ${room}`);
+  }
+
+  saveDb();
+  res.status(201).json(newTicket);
+});
+
+app.patch("/api/tickets/:id", (req, res) => {
+  const ticketIndex = db.tickets.findIndex((t) => t.id === req.params.id);
+  if (ticketIndex === -1) return res.status(404).json({ error: "Ticket not found" });
+
+  const updates = req.body;
+  db.tickets[ticketIndex] = { ...db.tickets[ticketIndex], ...updates };
+
+  if (updates.status === "resolved" && !db.tickets[ticketIndex].resolvedAt) {
+    db.tickets[ticketIndex].resolvedAt = new Date();
+  }
+
+  saveDb();
+  res.json(db.tickets[ticketIndex]);
+});
+
+app.delete("/api/tickets/:id", (req, res) => {
+  const ticketIndex = db.tickets.findIndex((t) => t.id === req.params.id);
+  if (ticketIndex === -1) return res.status(404).json({ error: "Ticket not found" });
+  db.tickets.splice(ticketIndex, 1);
+  saveDb();
+  res.json({ message: "Ticket deleted" });
+});
+
+// ── Room DND Statuses ─────────────────────────────────────────────────────────
+app.get("/api/room-statuses", (req, res) => {
+  const now = new Date();
+  Object.keys(roomDndStatuses).forEach((room) => {
+    if (
+      roomDndStatuses[room].status === "dnd" &&
+      roomDndStatuses[room].dndUntil &&
+      new Date(roomDndStatuses[room].dndUntil) < now
+    ) {
+      roomDndStatuses[room].status = "available";
+      roomDndStatuses[room].dndUntil = null;
+    }
+  });
+  res.json(roomDndStatuses);
+});
+
+app.patch("/api/rooms/:room/dnd", (req, res) => {
+  const { room } = req.params;
+  const { status, dndHours } = req.body;
+
+  if (!roomDndStatuses[room]) {
+    roomDndStatuses[room] = { status: "available", dndUntil: null };
+  }
+
+  roomDndStatuses[room].status = status;
+
+  if (status === "dnd" && dndHours) {
+    roomDndStatuses[room].dndUntil = new Date(Date.now() + dndHours * 3600000);
+  } else {
+    roomDndStatuses[room].dndUntil = null;
+  }
+
+  res.json(roomDndStatuses[room]);
+});
+
+// ── Dashboard Stats ───────────────────────────────────────────────────────────
+app.get("/api/dashboard/stats", (req, res) => {
+  const now = new Date();
+  const stats = {
+    openTickets: db.tickets.filter((t) => t.status === "open").length,
+    dndRooms: Object.values(roomDndStatuses).filter((r) => r.status === "dnd").length,
+    resolvedToday: db.tickets.filter((t) => {
+      if (!t.resolvedAt) return false;
+      return new Date(t.resolvedAt).toDateString() === now.toDateString();
+    }).length,
+    avgResolutionTime: calculateAvgResolution(db.tickets),
+  };
+  res.json(stats);
+});
+
+function calculateAvgResolution(tickets) {
+  const resolved = tickets.filter((t) => t.resolvedAt && t.submittedAt);
+  if (resolved.length === 0) return "0m";
+  const totalMinutes = resolved.reduce((sum, t) => {
+    return sum + (new Date(t.resolvedAt) - new Date(t.submittedAt)) / 60000;
+  }, 0);
+  const avg = Math.round(totalMinutes / resolved.length);
+  return avg < 60 ? `${avg}m` : `${Math.floor(avg / 60)}h ${avg % 60}m`;
+}
 
 app.listen(PORT, () => console.log(`Hotel Ops API running on http://localhost:${PORT}`));

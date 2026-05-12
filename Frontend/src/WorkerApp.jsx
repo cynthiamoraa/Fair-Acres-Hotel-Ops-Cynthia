@@ -54,9 +54,9 @@ export default function WorkerApp() {
 
   return (
     <div className="min-h-screen bg-[#F5F6FA] text-slate-950">
-      <header className="bg-[#111827] text-white px-6 py-4 flex items-center justify-between">
+      <header className="bg-[#BE185D] text-white px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#F7B955] text-slate-950">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#F9A8D4] text-[#BE185D]">
             <Building2 size={18} />
           </div>
           <div>
@@ -152,7 +152,7 @@ function LoginScreen({ workers, onLogin }) {
         {error && <p className="text-sm text-rose-600">{error}</p>}
 
         <button disabled={loading}
-          className="w-full h-12 rounded-2xl bg-[#111827] text-white font-semibold text-sm hover:bg-slate-800 disabled:opacity-40">
+          className="w-full h-12 rounded-2xl bg-[#BE185D] text-white font-semibold text-sm hover:bg-pink-700 disabled:opacity-40">
           {loading ? "Signing in…" : "View My Tasks"}
         </button>
       </form>
