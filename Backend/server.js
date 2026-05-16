@@ -446,7 +446,17 @@ app.post("/api/tasks/:id/complete", upload.single("image"), multerError, async (
       const issues = await pgOps.getIssues();
       const issue = issues.find((i) => i.id === task.issue_id);
       if (issue && issue.status === "open") {
-        await pgOps.updateIssue(issue.id, { status: "resolved" });
+        await pgOps.updateIssue(issue.id, {
+          status: "resolved",
+          resolved_at: new Date().toISOString(),
+        });
+        
+        // Release room from maintenance when issue is resolved
+        const rooms = await pgOps.getRooms();
+        const room = rooms.find((r) => r.code.toLowerCase() === issue.location.toLowerCase());
+        if (room && room.status === "maintenance") {
+          await pgOps.updateRoom(room.id, { status: "available" });
+        }
       }
     }
 
