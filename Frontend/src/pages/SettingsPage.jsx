@@ -9,8 +9,10 @@ export default function SettingsPage({ workers, onWorkersChange }) {
 
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerPin, setNewWorkerPin] = useState("");
+  const [newWorkerTeam, setNewWorkerTeam] = useState("Housekeeping");
   const [showNewPin, setShowNewPin] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState("all");
 
   const [changingPinFor, setChangingPinFor] = useState(null);
   const [newPin, setNewPin] = useState("");
@@ -38,12 +40,13 @@ export default function SettingsPage({ workers, onWorkersChange }) {
     if (!newWorkerName.trim()) return;
     if (newWorkerPin.length < 4) return alert("PIN must be at least 4 digits.");
     setAdding(true);
-    const res = await postJson("/workers", { name: newWorkerName.trim(), pin: newWorkerPin });
+    const res = await postJson("/workers", { name: newWorkerName.trim(), pin: newWorkerPin, team: newWorkerTeam });
     const data = await res.json();
     setAdding(false);
     if (!res.ok) return alert(data.error || "Failed to add worker.");
     setNewWorkerName("");
     setNewWorkerPin("");
+    setNewWorkerTeam("Housekeeping");
     onWorkersChange();
   }
 
@@ -115,17 +118,37 @@ export default function SettingsPage({ workers, onWorkersChange }) {
 
       {/* Workers */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-        <h3 className="font-bold text-slate-950">Housekeeping Team</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-slate-950">Team Members</h3>
+          <select 
+            value={selectedTeamFilter}
+            onChange={(e) => setSelectedTeamFilter(e.target.value)}
+            className="h-9 px-3 rounded-lg border border-slate-200 text-sm outline-none focus:border-slate-400"
+          >
+            <option value="all">All Teams</option>
+            <option value="Housekeeping">Housekeeping</option>
+            <option value="Kitchen">Kitchen</option>
+            <option value="Security">Security</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Front Desk">Front Desk</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
 
         <div className="space-y-2">
-          {workers.map((w) => (
+          {workers
+            .filter(w => selectedTeamFilter === 'all' || w.team === selectedTeamFilter)
+            .map((w) => (
             <div key={w.id} className="rounded-xl bg-[#FAFBFD] border border-slate-200 px-4 py-3 space-y-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-xs font-bold text-white">
                     {w.name.slice(0, 1)}
                   </div>
-                  <p className="text-sm font-semibold text-slate-900">{w.name}</p>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{w.name}</p>
+                    <p className="text-xs text-slate-500">{w.team || 'Housekeeping'}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button onClick={() => { setChangingPinFor(changingPinFor === w.id ? null : w.id); setNewPin(""); }}
@@ -153,11 +176,26 @@ export default function SettingsPage({ workers, onWorkersChange }) {
             </div>
           ))}
           {!workers.length && <p className="text-sm text-slate-500">No workers yet.</p>}
+          {workers.length > 0 && workers.filter(w => selectedTeamFilter === 'all' || w.team === selectedTeamFilter).length === 0 && (
+            <p className="text-sm text-slate-500">No workers in this team.</p>
+          )}
         </div>
 
         <form onSubmit={handleAddWorker} className="space-y-2">
           <input className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
             placeholder="Worker name" value={newWorkerName} onChange={(e) => setNewWorkerName(e.target.value)} />
+          <select
+            value={newWorkerTeam}
+            onChange={(e) => setNewWorkerTeam(e.target.value)}
+            className="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
+          >
+            <option value="Housekeeping">Housekeeping</option>
+            <option value="Kitchen">Kitchen</option>
+            <option value="Security">Security</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Front Desk">Front Desk</option>
+            <option value="Other">Other</option>
+          </select>
           <div className="relative">
             <input type={showNewPin ? "text" : "password"} inputMode="numeric" maxLength={8}
               className="h-11 w-full rounded-xl border border-slate-200 px-4 pr-10 text-sm outline-none focus:border-slate-400"

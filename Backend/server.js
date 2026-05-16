@@ -68,6 +68,10 @@ if (!USE_POSTGRES) {
   if (!db.manager) db.manager = { password: "admin1234" };
   if (!db.settings) db.settings = { hotelName: "", contactEmail: "" };
   if (!db.reviews) db.reviews = [];
+  // Add default team to workers if missing
+  db.workers.forEach((worker) => {
+    if (!worker.team) worker.team = 'Housekeeping';
+  });
   db.issues.forEach((issue, idx) => {
     if (!issue.ticketNo) {
       issue.ticketNo = `TKT-${String(idx + 1).padStart(4, "0")}`;
@@ -177,24 +181,37 @@ app.patch("/api/settings", async (req, res) => {
 app.get("/api/health", (_, res) => res.json({ ok: true }));
 
 // Workers
-app.get("/api/workers", async (_, res) => {
-  const workers = USE_POSTGRES ? await pgOps.getWorkers() : db.workers;
-  res.json(workers.map((w) => ({ id: w.id, name: w.name })));
+app.get("/api/workers", async (req, res) => {
+  const { team } = req.query;
+  let workers = USE_POSTGRES ? await pgOps.getWorkers() : db.workers;
+  
+  // Filter by team if specified
+  if (team && team !== 'all') {
+    workers = workers.filter((w) => w.team === team);
+  }
+  
+  res.json(workers.map((w) => ({ id: w.id, name: w.name, team: w.team || 'Housekeeping' })));
 });
 
 app.post("/api/workers", async (req, res) => {
-  const { name, pin } = req.body;
+  const { name, pin, team = 'Housekeeping' } = req.body;
   if (!name) return res.status(400).json({ error: "name is required." });
   if (!pin || String(pin).length < 4) return res.status(400).json({ error: "PIN must be at least 4 digits." });
+  
+  const validTeams = ['Housekeeping', 'Kitchen', 'Security', 'Maintenance', 'Front Desk', 'Other'];
+  if (!validTeams.includes(team)) {
+    return res.status(400).json({ error: "Invalid team. Must be one of: " + validTeams.join(', ') });
+  }
+  
   const id = `w${Date.now()}`;
-  const worker = { id, name, pin: String(pin) };
+  const worker = { id, name, pin: String(pin), team };
   if (USE_POSTGRES) {
     await pgOps.createWorker(worker);
   } else {
     db.workers.push(worker);
     saveJsonDb(db);
   }
-  return res.status(201).json({ id: worker.id, name: worker.name });
+  return res.status(201).json({ id: worker.id, name: worker.name, team: worker.team });
 });
 
 app.patch("/api/workers/:id/pin", async (req, res) => {

@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS rooms (
 CREATE TABLE IF NOT EXISTS workers (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  pin TEXT NOT NULL
+  pin TEXT NOT NULL,
+  team TEXT DEFAULT 'Housekeeping' CHECK (team IN ('Housekeeping', 'Kitchen', 'Security', 'Maintenance', 'Front Desk', 'Other'))
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -73,3 +74,4 @@ CREATE INDEX IF NOT EXISTS idx_tasks_worker ON tasks(worker_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_issues_ticket ON issues(ticket_no);
 CREATE INDEX IF NOT EXISTS idx_rooms_code ON rooms(code);
+CREATE INDEX IF NOT EXISTS idx_workers_team ON workers(team);
