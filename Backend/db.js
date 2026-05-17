@@ -118,7 +118,7 @@ const pgOps = {
   },
   async createWorker(worker) {
     try {
-      const result = await sql`INSERT INTO workers (id, name, pin) VALUES (${worker.id}, ${worker.name}, ${worker.pin}) RETURNING *`;
+      const result = await sql`INSERT INTO workers (id, name, pin, team) VALUES (${worker.id}, ${worker.name}, ${worker.pin}, ${worker.team || 'Housekeeping'}) RETURNING *`;
       return result[0];
     } catch (error) {
       console.error("createWorker error:", error);
