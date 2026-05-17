@@ -1,15 +1,32 @@
 import {
-  AlertTriangle, BedDouble, CalendarDays, CheckCircle2, ChevronDown,
-  ClipboardList, LayoutDashboard, MessageSquare, MoreHorizontal, Plus,
-  QrCode, Search, Sparkles, Star, Ticket, UserCog, Users, Wrench, X,
+  AlertTriangle,
+  BedDouble,
+  CalendarDays,
+  CheckCircle2,
+  ChevronDown,
+  ClipboardList,
+  LayoutDashboard,
+  MessageSquare,
+  MoreHorizontal,
+  Plus,
+  QrCode,
+  Search,
+  Sparkles,
+  Star,
+  UserCog,
+  Users,
+  Wrench,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AddRoomModal from "../components/AddRoomModal";
 import Badge from "../components/Badge";
 import QRModal from "../components/QRModal";
-import OverdueBadge, { COMPLAINT_SLA_MS, TASK_SLA_MS, isOverdue } from "../components/OverdueBadge";
-import TicketDashboard from "../components/TicketDashboard";
-
+import OverdueBadge, {
+  COMPLAINT_SLA_MS,
+  TASK_SLA_MS,
+  isOverdue,
+} from "../components/OverdueBadge";
 import { API_BASE_URL, patchJson, postJson } from "../services/api";
 
 const roomPalette = {
@@ -17,17 +34,31 @@ const roomPalette = {
   occupied: "border-sky-200 bg-sky-50 text-sky-700",
   maintenance: "border-rose-200 bg-rose-50 text-rose-700",
 };
-const statusCycle = { available: "occupied", occupied: "maintenance", maintenance: "available" };
+const statusCycle = {
+  available: "occupied",
+  occupied: "maintenance",
+  maintenance: "available",
+};
 const DATE_OPTIONS = ["Today", "Yesterday", "Last 7 days", "Last 30 days"];
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "workers", label: "Workers & Tasks", icon: Users },
-  { id: "tickets", label: "Tickets", icon: Ticket },
   { id: "complaints", label: "Complaints", icon: AlertTriangle },
   { id: "reviews", label: "Reviews", icon: MessageSquare },
 ];
 
-export default function ManagerPage({ stats, rooms, workers, issues, reviews, tasks, newTask, onNewTaskChange, onCreateTask, onRoomsChange }) {
+export default function ManagerPage({
+  stats,
+  rooms,
+  workers,
+  issues,
+  reviews,
+  tasks,
+  newTask,
+  onNewTaskChange,
+  onCreateTask,
+  onRoomsChange,
+}) {
   const [tab, setTab] = useState("overview");
   const [showQR, setShowQR] = useState(false);
   const [showAddRoom, setShowAddRoom] = useState(false);
@@ -42,7 +73,8 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
 
   useEffect(() => {
     function handleClick(e) {
-      if (dateRef.current && !dateRef.current.contains(e.target)) setShowDatePicker(false);
+      if (dateRef.current && !dateRef.current.contains(e.target))
+        setShowDatePicker(false);
       if (!e.target.closest("[data-card-menu]")) setOpenCardMenu(null);
     }
     document.addEventListener("mousedown", handleClick);
@@ -51,25 +83,58 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
 
   const safeStats = {
     roomsTotal: stats?.roomsTotal ?? rooms.length,
-    available: stats?.available ?? rooms.filter((r) => r.status === "available").length,
-    occupied: stats?.occupied ?? rooms.filter((r) => r.status === "occupied").length,
-    maintenance: stats?.maintenance ?? rooms.filter((r) => r.status === "maintenance").length,
+    available:
+      stats?.available ?? rooms.filter((r) => r.status === "available").length,
+    occupied:
+      stats?.occupied ?? rooms.filter((r) => r.status === "occupied").length,
+    maintenance:
+      stats?.maintenance ??
+      rooms.filter((r) => r.status === "maintenance").length,
     pendingTasks: stats?.pendingTasks ?? 0,
     completedTasks: stats?.completedTasks ?? 0,
-    issuesOpen: stats?.issuesOpen ?? issues.filter((i) => i.status === "open").length,
+    issuesOpen:
+      stats?.issuesOpen ?? issues.filter((i) => i.status === "open").length,
   };
 
   const statCards = [
-    { label: "Total Rooms", value: safeStats.roomsTotal, helper: "Across all floors", icon: BedDouble, color: "bg-[#111827] text-white" },
-    { label: "Available", value: safeStats.available, helper: "Ready for guests", icon: CheckCircle2, color: "bg-emerald-100 text-emerald-700" },
-    { label: "In Service", value: safeStats.pendingTasks, helper: "Pending tasks", icon: Wrench, color: "bg-amber-100 text-amber-700" },
-    { label: "Open Issues", value: safeStats.issuesOpen, helper: "Guest reports", icon: AlertTriangle, color: "bg-rose-100 text-rose-700" },
+    {
+      label: "Total Rooms",
+      value: safeStats.roomsTotal,
+      helper: "Across all floors",
+      icon: BedDouble,
+      color: "bg-[#111827] text-white",
+    },
+    {
+      label: "Available",
+      value: safeStats.available,
+      helper: "Ready for guests",
+      icon: CheckCircle2,
+      color: "bg-emerald-100 text-emerald-700",
+    },
+    {
+      label: "In Service",
+      value: safeStats.pendingTasks,
+      helper: "Pending tasks",
+      icon: Wrench,
+      color: "bg-amber-100 text-amber-700",
+    },
+    {
+      label: "Open Issues",
+      value: safeStats.issuesOpen,
+      helper: "Guest reports",
+      icon: AlertTriangle,
+      color: "bg-rose-100 text-rose-700",
+    },
   ];
 
   const roomBreakdown = [
     { label: "Available", value: safeStats.available, color: "bg-emerald-500" },
     { label: "Occupied", value: safeStats.occupied, color: "bg-sky-500" },
-    { label: "Maintenance", value: safeStats.maintenance, color: "bg-rose-500" },
+    {
+      label: "Maintenance",
+      value: safeStats.maintenance,
+      color: "bg-rose-500",
+    },
   ];
 
   const filteredRooms = rooms
@@ -83,7 +148,9 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
 
   async function cycleRoomStatus(room) {
     setUpdatingRoom(room.id);
-    await patchJson(`/rooms/${room.id}/status`, { status: statusCycle[room.status] || "available" });
+    await patchJson(`/rooms/${room.id}/status`, {
+      status: statusCycle[room.status] || "available",
+    });
     onRoomsChange();
     setUpdatingRoom(null);
   }
@@ -100,7 +167,9 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
     return acc;
   }, {});
 
-  const focusedWorkerTasks = selectedWorker ? workerTaskMap[selectedWorker] || [] : [];
+  const focusedWorkerTasks = selectedWorker
+    ? workerTaskMap[selectedWorker] || []
+    : [];
 
   return (
     <section className="mx-auto max-w-7xl space-y-6">
@@ -190,6 +259,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
           </button>
         ))}
       </div>
+
       {/* ── OVERVIEW TAB ── */}
       {tab === "overview" && (
         <div className="space-y-6">
@@ -217,7 +287,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                       >
                         <MoreHorizontal size={18} />
                       </button>
-
                       {openCardMenu === i && (
                         <div className="absolute right-4 top-14 z-20 w-36 rounded-2xl border border-slate-200 bg-white shadow-lg py-1">
                           <button className="w-full text-left px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50">
@@ -230,11 +299,9 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                       )}
                     </div>
                   </div>
-
                   <p className="mt-5 text-3xl font-bold text-slate-950">
                     {card.value}
                   </p>
-
                   <div className="mt-1 flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-700">
                       {card.label}
@@ -246,7 +313,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
             })}
           </div>
 
-          {/* Room inventory + Open Issues + Breakdown */}
+          {/* Room Inventory + Open Issues + Room Breakdown */}
           <div className="grid gap-6 xl:grid-cols-[1.5fr_0.9fr]">
             <div className="space-y-6">
               {/* Room Inventory */}
@@ -260,7 +327,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                       Manage room availability
                     </p>
                   </div>
-
                   <button
                     onClick={() => setShowAddRoom(true)}
                     className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#BE185D] px-4 text-sm font-semibold text-white hover:bg-pink-700"
@@ -275,7 +341,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                       No rooms match "{search}".
                     </p>
                   )}
-
                   {filteredRooms.map((room) => (
                     <div
                       key={room.id}
@@ -290,7 +355,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                             Floor {room.floor}
                           </p>
                         </div>
-
                         <div
                           className={`grid h-10 w-10 place-items-center rounded-xl border ${
                             roomPalette[room.status] ||
@@ -300,7 +364,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                           <BedDouble size={18} />
                         </div>
                       </div>
-
                       <div className="mt-4">
                         <button
                           onClick={() => cycleRoomStatus(room)}
@@ -325,14 +388,12 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                     Guest complaints requiring attention
                   </p>
                 </div>
-
                 <div className="mt-5 space-y-3">
                   {issues.filter((i) => i.status === "open").length === 0 && (
                     <p className="text-sm text-slate-500">
                       No open issues. Great job! 🎉
                     </p>
                   )}
-
                   {issues
                     .filter((i) => i.status === "open")
                     .map((issue) => (
@@ -350,18 +411,15 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                               <p className="font-bold text-slate-950">
                                 {issue.location}
                               </p>
-
                               {issue.ticketNo && (
                                 <span className="rounded-full bg-pink-100 text-[#BE185D] border border-pink-200 px-2.5 py-0.5 text-xs font-bold tracking-widest">
                                   {issue.ticketNo}
                                 </span>
                               )}
                             </div>
-
                             <p className="mt-1 text-sm text-slate-600">
                               {issue.description || "No description"}
                             </p>
-
                             <div className="mt-2">
                               <OverdueBadge
                                 isoDate={issue.createdAt}
@@ -369,7 +427,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                               />
                             </div>
                           </div>
-
                           {issue.imageUrl && (
                             <a
                               href={`${API_BASE_URL}${issue.imageUrl}`}
@@ -384,7 +441,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                             </a>
                           )}
                         </div>
-
                         <button
                           onClick={() => resolveIssue(issue.id)}
                           disabled={resolvingIssue === issue.id}
@@ -407,16 +463,13 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                     Current occupancy mix
                   </p>
                 </div>
-
                 <Sparkles className="text-[#F7B955]" size={22} />
               </div>
-
               <div className="mt-6 space-y-5">
                 {roomBreakdown.map((item) => {
                   const percent = safeStats.roomsTotal
                     ? Math.round((item.value / safeStats.roomsTotal) * 100)
                     : 0;
-
                   return (
                     <div key={item.label}>
                       <div className="mb-2 flex items-center justify-between text-sm">
@@ -425,7 +478,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                           {item.value} rooms
                         </span>
                       </div>
-
                       <div className="h-2 rounded-full bg-white/10">
                         <div
                           className={`h-2 rounded-full ${item.color}`}
@@ -436,7 +488,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                   );
                 })}
               </div>
-
               <div className="mt-7 rounded-2xl bg-white/[0.06] p-4">
                 <p className="text-sm font-semibold">Completed tasks</p>
                 <p className="mt-2 text-3xl font-bold">
@@ -449,7 +500,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
             </div>
           </div>
 
-          {/* Assign task form */}
+          {/* Assign Task */}
           <form
             onSubmit={onCreateTask}
             className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm max-w-md"
@@ -457,52 +508,36 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
             <h3 className="flex items-center gap-2 text-lg font-bold">
               <UserCog size={19} /> Assign Task
             </h3>
-
             <div className="mt-5 space-y-3">
               <input
                 className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
                 placeholder="Room code"
                 value={newTask.roomCode}
                 onChange={(e) =>
-                  onNewTaskChange({
-                    ...newTask,
-                    roomCode: e.target.value,
-                  })
+                  onNewTaskChange({ ...newTask, roomCode: e.target.value })
                 }
               />
-
               <input
                 className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
                 placeholder="Task title"
                 value={newTask.title}
                 onChange={(e) =>
-                  onNewTaskChange({
-                    ...newTask,
-                    title: e.target.value,
-                  })
+                  onNewTaskChange({ ...newTask, title: e.target.value })
                 }
               />
-
               <textarea
                 className="min-h-20 w-full rounded-xl border border-slate-200 p-4 text-sm outline-none focus:border-slate-400"
                 placeholder="Notes"
                 value={newTask.notes}
                 onChange={(e) =>
-                  onNewTaskChange({
-                    ...newTask,
-                    notes: e.target.value,
-                  })
+                  onNewTaskChange({ ...newTask, notes: e.target.value })
                 }
               />
-
               <select
                 className="h-12 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-slate-400"
                 value={newTask.workerId}
                 onChange={(e) =>
-                  onNewTaskChange({
-                    ...newTask,
-                    workerId: e.target.value,
-                  })
+                  onNewTaskChange({ ...newTask, workerId: e.target.value })
                 }
               >
                 {workers.map((w) => (
@@ -511,7 +546,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                   </option>
                 ))}
               </select>
-
               <button className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#BE185D] text-sm font-bold text-white hover:bg-pink-700">
                 <ClipboardList size={18} /> Create Task
               </button>
@@ -650,9 +684,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
         </div>
       )}
 
-      {/* ── TICKETS TAB ── */}
-      {tab === "tickets" && <TicketDashboard />}
-
       {/* ── COMPLAINTS TAB ── */}
       {tab === "complaints" && (
         <div className="space-y-4">
@@ -743,7 +774,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                       size={18}
                       className={
                         n <= Math.round(avg)
-                          ? "fill-amber-400 text-rose-700"
+                          ? "fill-amber-400 text-amber-400"
                           : "text-slate-300"
                       }
                     />
@@ -793,7 +824,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                           size={14}
                           className={
                             n <= review.rating
-                              ? "fill-amber-400 text-rose-700"
+                              ? "fill-amber-400 text-amber-400"
                               : "text-slate-300"
                           }
                         />
