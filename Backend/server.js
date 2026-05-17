@@ -333,6 +333,54 @@ app.patch("/api/rooms/:id/status", async (req, res) => {
   }
 });
 
+app.patch("/api/rooms/:id", async (req, res) => {
+  const { code, floor, status, type, beds, notes, currentGuest, lastCleaned } = req.body;
+  if (status && !statusAllowed.has(status)) return res.status(400).json({ error: "Invalid room status." });
+  
+  if (USE_POSTGRES) {
+    const updates = {};
+    if (code !== undefined) updates.code = code;
+    if (floor !== undefined) updates.floor = Number(floor);
+    if (status !== undefined) updates.status = status;
+    if (type !== undefined) updates.type = type;
+    if (beds !== undefined) updates.beds = Number(beds);
+    if (notes !== undefined) updates.notes = notes;
+    if (currentGuest !== undefined) updates.current_guest = currentGuest;
+    if (lastCleaned !== undefined) updates.last_cleaned = lastCleaned;
+    
+    const room = await pgOps.updateRoom(Number(req.params.id), updates);
+    if (!room) return res.status(404).json({ error: "Room not found." });
+    return res.json(room);
+  } else {
+    const room = db.rooms.find((r) => r.id === Number(req.params.id));
+    if (!room) return res.status(404).json({ error: "Room not found." });
+    
+    if (code !== undefined) room.code = code;
+    if (floor !== undefined) room.floor = Number(floor);
+    if (status !== undefined) room.status = status;
+    if (type !== undefined) room.type = type;
+    if (beds !== undefined) room.beds = Number(beds);
+    if (notes !== undefined) room.notes = notes;
+    if (currentGuest !== undefined) room.currentGuest = currentGuest;
+    if (lastCleaned !== undefined) room.lastCleaned = lastCleaned;
+    
+    saveJsonDb(db);
+    return res.json(room);
+  }
+});
+
+app.delete("/api/rooms/:id", async (req, res) => {
+  if (USE_POSTGRES) {
+    await pgOps.deleteRoom(Number(req.params.id));
+  } else {
+    const idx = db.rooms.findIndex((r) => r.id === Number(req.params.id));
+    if (idx === -1) return res.status(404).json({ error: "Room not found." });
+    db.rooms.splice(idx, 1);
+    saveJsonDb(db);
+  }
+  return res.json({ ok: true });
+});
+
 // Tasks
 app.get("/api/tasks", async (req, res) => {
   const { workerId, status } = req.query;

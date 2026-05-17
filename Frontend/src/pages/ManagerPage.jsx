@@ -1,14 +1,16 @@
 import {
   AlertTriangle, BedDouble, CalendarDays, CheckCircle2, ChevronDown,
   ClipboardList, LayoutDashboard, MessageSquare, MoreHorizontal, Plus,
-  QrCode, Search, Sparkles, Star, UserCog, Users, Wrench, X,
+  QrCode, Search, Star, UserCog, Users, Wrench, X, Edit2, Trash2,
+  Filter, SortAsc, Clock, UserCheck, ClipboardCheck,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import AddRoomModal from "../components/AddRoomModal";
+import EditRoomModal from "../components/EditRoomModal";
 import Badge from "../components/Badge";
 import QRModal from "../components/QRModal";
 import OverdueBadge, { COMPLAINT_SLA_MS, TASK_SLA_MS, isOverdue } from "../components/OverdueBadge";
-import { API_BASE_URL, patchJson, postJson } from "../services/api";
+import { API_BASE_URL, patchJson, postJson, deleteReq } from "../services/api";
 
 const roomPalette = {
   available: "border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -19,6 +21,7 @@ const statusCycle = { available: "occupied", occupied: "maintenance", maintenanc
 const DATE_OPTIONS = ["Today", "Yesterday", "Last 7 days", "Last 30 days"];
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "rooms", label: "Rooms", icon: BedDouble },
   { id: "workers", label: "Workers & Tasks", icon: Users },
   { id: "complaints", label: "Complaints", icon: AlertTriangle },
   { id: "reviews", label: "Reviews", icon: MessageSquare },
@@ -28,6 +31,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
   const [tab, setTab] = useState("overview");
   const [showQR, setShowQR] = useState(false);
   const [showAddRoom, setShowAddRoom] = useState(false);
+  const [editingRoom, setEditingRoom] = useState(null);
   const [search, setSearch] = useState("");
   const [openCardMenu, setOpenCardMenu] = useState(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -35,6 +39,11 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
   const [updatingRoom, setUpdatingRoom] = useState(null);
   const [resolvingIssue, setResolvingIssue] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [floorFilter, setFloorFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("code");
+  const [viewMode, setViewMode] = useState("grid");
   const dateRef = useRef(null);
 
   useEffect(() => {
@@ -76,7 +85,26 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
         r.code.toLowerCase().includes(search.toLowerCase()) ||
         r.status.toLowerCase().includes(search.toLowerCase()) ||
         String(r.floor).includes(search)
-    );
+    )
+    .filter((r) => statusFilter === "all" || r.status === statusFilter)
+    .filter((r) => floorFilter === "all" || String(r.floor) === floorFilter)
+    .filter((r) => typeFilter === "all" || r.type === typeFilter)
+    .sort((a, b) => {
+      if (sortBy === "code") return a.code.localeCompare(b.code);
+      if (sortBy === "floor") return a.floor - b.floor;
+      if (sortBy === "status") return a.status.localeCompare(b.status);
+      if (sortBy === "type") return (a.type || "").localeCompare(b.type || "");
+      return 0;
+    });
+
+  const uniqueFloors = [...new Set(rooms.map((r) => r.floor))].sort((a, b) => a - b);
+  const uniqueTypes = [...new Set(rooms.map((r) => r.type).filter(Boolean))];
+
+  async function deleteRoom(id) {
+    if (!confirm("Are you sure you want to delete this room?")) return;
+    await deleteReq(`/rooms/${id}`);
+    onRoomsChange();
+  }
 
   async function cycleRoomStatus(room) {
     setUpdatingRoom(room.id);
@@ -203,7 +231,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
               </div>
               <div className="mt-5 space-y-3">
                 {issues.filter((i) => i.status === "open").length === 0 && (
-                  <p className="text-sm text-slate-500">No open issues. Great job! 🎉</p>
+                  <p className="text-sm text-slate-500">No open issues.</p>
                 )}
                 {issues.filter((i) => i.status === "open").map((issue) => (
                   <div key={issue.id} className={`rounded-2xl border p-4 ${
@@ -251,7 +279,6 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
                   <h3 className="text-lg font-bold">Room Status</h3>
                   <p className="text-sm text-slate-400">Current occupancy mix</p>
                 </div>
-                <Sparkles className="text-[#F7B955]" size={22} />
               </div>
               <div className="mt-6 space-y-5">
                 {roomBreakdown.map((item) => {
@@ -276,6 +303,232 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── ROOMS TAB ── */}
+      {tab === "rooms" && (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-slate-950">All Rooms</h3>
+              <p className="text-sm text-slate-500">{filteredRooms.length} room{filteredRooms.length !== 1 ? "s" : ""} found</p>
+            </div>
+            <button
+              onClick={() => setShowAddRoom(true)}
+              className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#BE185D] px-4 text-sm font-semibold text-white hover:bg-[#9F1239]"
+            >
+              <Plus size={17} /> Add Room
+            </button>
+          </div>
+
+          {/* Filters & Sort */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-slate-400" />
+              <select
+                className="h-9 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="available">Available</option>
+                <option value="occupied">Occupied</option>
+                <option value="maintenance">Maintenance</option>
+              </select>
+            </div>
+
+            <select
+              className="h-9 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
+              value={floorFilter}
+              onChange={(e) => setFloorFilter(e.target.value)}
+            >
+              <option value="all">All Floors</option>
+              {uniqueFloors.map((f) => <option key={f} value={f}>Floor {f}</option>)}
+            </select>
+
+            {uniqueTypes.length > 0 && (
+              <select
+                className="h-9 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              >
+                <option value="all">All Types</option>
+                {uniqueTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            )}
+
+            <div className="flex items-center gap-2">
+              <SortAsc size={16} className="text-slate-400" />
+              <select
+                className="h-9 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-slate-400"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="code">Sort by Code</option>
+                <option value="floor">Sort by Floor</option>
+                <option value="status">Sort by Status</option>
+                <option value="type">Sort by Type</option>
+              </select>
+            </div>
+
+            <div className="flex gap-1 ml-auto">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`h-9 px-3 rounded-lg text-sm font-semibold transition ${
+                  viewMode === "grid" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                Grid
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`h-9 px-3 rounded-lg text-sm font-semibold transition ${
+                  viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                List
+              </button>
+            </div>
+          </div>
+
+          {/* Grid View */}
+          {viewMode === "grid" && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filteredRooms.map((room) => {
+                const roomTasks = tasks.filter((t) => t.roomCode === room.code && t.status === "pending");
+                return (
+                  <div key={room.id} className={`rounded-2xl border p-4 shadow-sm ${roomPalette[room.status]}`}>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <BedDouble size={20} />
+                        <div>
+                          <p className="text-xl font-bold">{room.code}</p>
+                          <p className="text-xs mt-0.5">Floor {room.floor}</p>
+                        </div>
+                      </div>
+                      <Badge value={room.status} />
+                    </div>
+
+                    {room.type && (
+                      <div className="mt-3 flex items-center gap-2 text-xs">
+                        <span className="font-semibold">{room.type}</span>
+                        {room.beds && <span>• {room.beds} bed{room.beds !== 1 ? "s" : ""}</span>}
+                      </div>
+                    )}
+
+                    {room.notes && (
+                      <p className="mt-2 text-xs italic opacity-75 line-clamp-2">{room.notes}</p>
+                    )}
+
+                    {roomTasks.length > 0 && (
+                      <div className="mt-3 flex items-center gap-1.5 text-xs">
+                        <ClipboardCheck size={14} />
+                        <span className="font-semibold">{roomTasks.length} pending task{roomTasks.length !== 1 ? "s" : ""}</span>
+                      </div>
+                    )}
+
+                    {room.lastCleaned && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs opacity-75">
+                        <Clock size={12} />
+                        <span>Cleaned {new Date(room.lastCleaned).toLocaleDateString()}</span>
+                      </div>
+                    )}
+
+                    {room.currentGuest && (
+                      <div className="mt-2 flex items-center gap-1.5 text-xs">
+                        <UserCheck size={12} />
+                        <span className="font-semibold">{room.currentGuest}</span>
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex gap-2">
+                      <button
+                        onClick={() => cycleRoomStatus(room)}
+                        disabled={updatingRoom === room.id}
+                        className="flex-1 rounded-xl bg-white/50 hover:bg-white/80 px-3 py-2 text-xs font-semibold transition disabled:opacity-50"
+                      >
+                        {updatingRoom === room.id ? "Updating..." : "Change Status"}
+                      </button>
+                      <button
+                        onClick={() => setEditingRoom(room)}
+                        className="rounded-xl bg-white/50 hover:bg-white/80 p-2 transition"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteRoom(room.id)}
+                        className="rounded-xl bg-rose-500/20 hover:bg-rose-500/30 p-2 transition"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* List View */}
+          {viewMode === "list" && (
+            <div className="space-y-2">
+              {filteredRooms.map((room) => {
+                const roomTasks = tasks.filter((t) => t.roomCode === room.code && t.status === "pending");
+                return (
+                  <div key={room.id} className={`rounded-2xl border p-4 shadow-sm ${roomPalette[room.status]}`}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4 flex-1">
+                        <BedDouble size={24} />
+                        <div>
+                          <p className="text-lg font-bold">{room.code}</p>
+                          <div className="flex items-center gap-3 text-xs mt-1">
+                            <span>Floor {room.floor}</span>
+                            {room.type && <span>• {room.type}</span>}
+                            {room.beds && <span>• {room.beds} bed{room.beds !== 1 ? "s" : ""}</span>}
+                            {roomTasks.length > 0 && <span>• {roomTasks.length} pending task{roomTasks.length !== 1 ? "s" : ""}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        {room.currentGuest && (
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <UserCheck size={14} />
+                            <span className="font-semibold">{room.currentGuest}</span>
+                          </div>
+                        )}
+                        <Badge value={room.status} />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => cycleRoomStatus(room)}
+                            disabled={updatingRoom === room.id}
+                            className="rounded-xl bg-white/50 hover:bg-white/80 px-4 py-2 text-xs font-semibold transition disabled:opacity-50"
+                          >
+                            {updatingRoom === room.id ? "Updating..." : "Change Status"}
+                          </button>
+                          <button
+                            onClick={() => setEditingRoom(room)}
+                            className="rounded-xl bg-white/50 hover:bg-white/80 p-2 transition"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteRoom(room.id)}
+                            className="rounded-xl bg-rose-500/20 hover:bg-rose-500/30 p-2 transition"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {room.notes && (
+                      <p className="mt-3 text-sm italic opacity-75">{room.notes}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -462,6 +715,7 @@ export default function ManagerPage({ stats, rooms, workers, issues, reviews, ta
 
       {showQR && <QRModal onClose={() => setShowQR(false)} />}
       {showAddRoom && <AddRoomModal onClose={() => setShowAddRoom(false)} onAdded={onRoomsChange} />}
+      {editingRoom && <EditRoomModal room={editingRoom} onClose={() => setEditingRoom(null)} onUpdated={onRoomsChange} />}
     </section>
   );
 }
